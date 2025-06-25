@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  farcasterId   Int?
+  walletAddress String   @unique
+  createdAt     DateTime @default(now())
+  videos        Video[]
+}
+
+model DailyPrompt {
+  id        String   @id @default(uuid())
+  date      DateTime @unique
+  prompt    String
+  createdAt DateTime @default(now())
+  remixes   Remix[]
+}
+
+model Video {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  videoIpfs String
+  type      String   // 'daily', 'custom_remix', 'custom_video'
+  createdAt DateTime @default(now())
+  remix     Remix?   // Only present if this video is a remix
+}
+
+model Remix {
+  id           String      @id @default(uuid())
+  video        Video       @relation(fields: [videoId], references: [id])
+  videoId      String      @unique
+  prompt       DailyPrompt? @relation(fields: [promptId], references: [id])
+  promptId     String?
+  isMinted     Boolean     @default(false)
+  contractAddress String?
+  zoraCoinData Json?
+  createdAt    DateTime    @default(now())
+}
