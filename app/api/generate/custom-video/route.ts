@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     const video = await createCustomVideo({
       userId: user.id,
       videoIpfs,
+      videoUrl: generatedVideoUrl,
     })
     
     return NextResponse.json({

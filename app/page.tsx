@@ -18,6 +18,7 @@ type TabType = 'home' | 'history';
 interface Video {
   id: string;
   videoIpfs: string;
+  videoUrl?: string; // Original video URL from AI generation
   type: string;
   createdAt: string;
   remix?: {

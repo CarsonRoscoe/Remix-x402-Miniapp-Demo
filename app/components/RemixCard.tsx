@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { ZoraCoinButton } from './ZoraCoinButton';
-import { Coins, Share2, FileText } from 'lucide-react';
+import { ShareOnFarcaster } from './ShareOnFarcaster';
+import { Coins, FileText } from 'lucide-react';
 
 interface Video {
   id: string;
   videoIpfs: string;
+  videoUrl?: string; // Original video URL from AI generation
   type: string;
   createdAt: string;
   remix?: {
@@ -74,7 +76,7 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
   const isMinted = video.remix?.isMinted;
   const hasZoraData = !!video.remix?.zoraCoinData;
   const isDailyRemix = !!video.remix?.promptId;
-  const videoUrl = `https://ipfs.io/ipfs/${video.videoIpfs.replace('ipfs://', '')}`;
+  const ipfsUrl = `https://ipfs.io/ipfs/${video.videoIpfs.replace('ipfs://', '')}`;
 
   return (
     <>
@@ -106,16 +108,12 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
               >
                 <Coins className="w-5 h-5" />
               </button>
-              <button
-                onClick={() => {
-                  const referrer = process.env.NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS || address;
-                  const farcasterUrl = `https://warpcast.com/~/compose?text=Check out my remix! 🎬&embeds[]=${encodeURIComponent(videoUrl)}`;
-                  window.open(farcasterUrl, '_blank');
-                }}
+              <ShareOnFarcaster
+                videoUrl={video.videoUrl}
+                ipfsUrl={ipfsUrl}
                 className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
-              >
-                <Share2 className="w-5 h-5" />
-              </button>
+                iconOnly={true}
+              />
               {isDailyRemix && video.remix?.prompt && (
                 <button
                   onClick={() => setShowPromptModal(true)}
@@ -144,16 +142,12 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
               >
                 <Coins className="w-5 h-5" />
               </ZoraCoinButton>
-              <button
-                onClick={() => {
-                  const referrer = process.env.NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS || address;
-                  const farcasterUrl = `https://warpcast.com/~/compose?text=Check out my remix! 🎬&embeds[]=${encodeURIComponent(videoUrl)}`;
-                  window.open(farcasterUrl, '_blank');
-                }}
+              <ShareOnFarcaster
+                videoUrl={video.videoUrl}
+                ipfsUrl={ipfsUrl}
                 className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
-              >
-                <Share2 className="w-5 h-5" />
-              </button>
+                iconOnly={true}
+              />
               {isDailyRemix && video.remix?.prompt && (
                 <button
                   onClick={() => setShowPromptModal(true)}
@@ -197,11 +191,11 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
             
             <div className="flex-1 p-6 overflow-hidden">
               <video 
-                src={`${video.videoIpfs.replace('ipfs://', 'https://ipfs.io/ipfs/')}`}
-                className="w-full h-full object-contain rounded-xl shadow-lg"
+                src={video.videoUrl || ipfsUrl}
                 controls
+                className="w-full h-full object-contain rounded-lg"
                 autoPlay
-                poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%23f1f5f9'/%3E%3C/svg%3E"
+                muted
               />
             </div>
           </div>
@@ -210,10 +204,12 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
 
       {/* Prompt Modal */}
       {showPromptModal && video.remix?.prompt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Daily Prompt</h3>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
+                Daily Prompt
+              </h3>
               <button
                 onClick={() => setShowPromptModal(false)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
@@ -223,24 +219,12 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
                 </svg>
               </button>
             </div>
-            
-            <div className="space-y-3">
-              <div>
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Date:</span>
-                <p className="text-sm text-slate-900 dark:text-white">{new Date(video.remix.prompt.date).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Prompt:</span>
-                <p className="text-sm text-slate-900 dark:text-white mt-1 leading-relaxed">{video.remix.prompt.prompt}</p>
-              </div>
+            <p className="text-slate-700 dark:text-slate-300 text-lg leading-relaxed">
+              {video.remix.prompt.prompt}
+            </p>
+            <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              {new Date(video.remix.prompt.date).toLocaleDateString()}
             </div>
-            
-            <button
-              onClick={() => setShowPromptModal(false)}
-              className="w-full mt-6 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-            >
-              Close
-            </button>
           </div>
         </div>
       )}

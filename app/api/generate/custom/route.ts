@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     const { remix, video } = await createCustomRemix({
       userId: user.id,
       videoIpfs,
+      videoUrl: generatedVideoUrl,
     });
     
     return NextResponse.json({

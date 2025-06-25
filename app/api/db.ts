@@ -49,10 +49,12 @@ export async function createDailyRemix({
   userId,
   promptId,
   videoIpfs,
+  videoUrl,
 }: {
   userId: string;
   promptId: string;
   videoIpfs: string;
+  videoUrl?: string;
 }) {
   await ensureConnected();
   
@@ -61,6 +63,7 @@ export async function createDailyRemix({
     data: {
       userId,
       videoIpfs,
+      videoUrl,
       type: 'daily',
     },
   });
@@ -79,9 +82,11 @@ export async function createDailyRemix({
 export async function createCustomRemix({
   userId,
   videoIpfs,
+  videoUrl,
 }: {
   userId: string;
   videoIpfs: string;
+  videoUrl?: string;
 }) {
   await ensureConnected();
   
@@ -90,6 +95,7 @@ export async function createCustomRemix({
     data: {
       userId,
       videoIpfs,
+      videoUrl,
       type: 'custom_remix',
     },
   });
@@ -107,9 +113,11 @@ export async function createCustomRemix({
 export async function createCustomVideo({
   userId,
   videoIpfs,
+  videoUrl,
 }: {
   userId: string;
   videoIpfs: string;
+  videoUrl?: string;
 }) {
   await ensureConnected();
   
@@ -117,6 +125,7 @@ export async function createCustomVideo({
     data: {
       userId,
       videoIpfs,
+      videoUrl,
       type: 'custom_video',
     },
   });

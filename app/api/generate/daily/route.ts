@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       promptId: dailyPrompt.id,
       videoIpfs,
+      videoUrl: generatedVideoUrl,
     });
 
     return NextResponse.json({
