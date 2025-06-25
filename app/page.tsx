@@ -185,7 +185,7 @@ export default function App() {
       }
 
       // For x402-fetch, we need to pass the wallet client as the account
-      const wrappedFetch = wrapFetchWithPayment(fetch, walletClient as unknown as Parameters<typeof wrapFetchWithPayment>[1]);
+      const wrappedFetch = wrapFetchWithPayment(fetch, walletClient as unknown as Parameters<typeof wrapFetchWithPayment>[1], BigInt(2000000));
 
       // Call the appropriate API endpoint with wallet address
       let endpoint: string;
@@ -456,7 +456,7 @@ export default function App() {
               onClick={handleCustomPromptSubmit}
               className="flex-1 py-4 px-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
-              Generate ($1.00 USDC)
+              Generate ($2.00 USDC)
             </button>
           </div>
         </div>
