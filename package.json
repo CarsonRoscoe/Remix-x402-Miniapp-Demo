@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "tsx scripts/seed-daily-prompts.ts"
+    "seed": "tsx scripts/seed-daily-prompts.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@coinbase/onchainkit": "latest",
