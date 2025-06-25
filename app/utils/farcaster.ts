@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export interface FarcasterUser {
   fid: number;
@@ -23,7 +23,7 @@ export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     if (!walletAddress) {
       setUser(null);
       setError(null);
@@ -58,11 +58,11 @@ export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
     } finally {
       setLoading(false);
     }
-  };
+  }, [walletAddress]);
 
   useEffect(() => {
     fetchUser();
-  }, [walletAddress]);
+  }, [fetchUser]);
 
   return {
     user,

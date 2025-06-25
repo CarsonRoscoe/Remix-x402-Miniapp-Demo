@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { getWalletClient } from 'wagmi/actions';
 import { config } from './viem-config';
@@ -60,14 +60,7 @@ export default function App() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
 
-  // Fetch data when tab changes or user connects
-  useEffect(() => {
-    if (isConnected && address && activeTab === 'history') {
-      fetchVideos();
-    }
-  }, [activeTab, isConnected, address]);
-
-  const fetchVideos = async () => {
+  const fetchVideos = useCallback(async () => {
     if (!address) return;
     
     setLoadingVideos(true);
@@ -85,7 +78,14 @@ export default function App() {
     } finally {
       setLoadingVideos(false);
     }
-  };
+  }, [address]);
+
+  // Fetch data when tab changes or user connects
+  useEffect(() => {
+    if (isConnected && address && activeTab === 'history') {
+      fetchVideos();
+    }
+  }, [activeTab, isConnected, address, fetchVideos]);
 
   const getVideoTypeLabel = (video: Video) => {
     if (video.remix) {
@@ -185,11 +185,11 @@ export default function App() {
       }
 
       // For x402-fetch, we need to pass the wallet client as the account
-      const wrappedFetch = wrapFetchWithPayment(fetch, walletClient as any);
+      const wrappedFetch = wrapFetchWithPayment(fetch, walletClient as unknown as Parameters<typeof wrapFetchWithPayment>[1]);
 
       // Call the appropriate API endpoint with wallet address
       let endpoint: string;
-      let payload: any;
+      let payload: Record<string, unknown>;
 
       switch (type) {
         case 'daily-remix':
@@ -226,7 +226,6 @@ export default function App() {
       if (data.success) {
         setGeneratedVideo(data.videoUrl);
         setIpfsUrl(data.ipfsUrl);
-        setVideoId(data.videoId || null);
         setRemixId(data.remixId || null);
         setGenerationStatus('success');
       } else {
@@ -246,7 +245,6 @@ export default function App() {
     setCustomPrompt('');
     setGeneratedVideo(null);
     setError(null);
-    setVideoId(null);
     setRemixId(null);
     setIpfsUrl(null);
   };
