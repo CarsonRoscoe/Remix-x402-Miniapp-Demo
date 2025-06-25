@@ -9,21 +9,21 @@ export const middleware = paymentMiddleware(
   payTo,
   {
     "/api/generate/daily": {
-      price: "$0.05",
+      price: "$0.50",
       network,
       config: {
         description: "Daily remix video generation with profile picture",
       },
     },
     "/api/generate/custom": {
-      price: "$0.10",
+      price: "$1.00",
       network,
       config: {
         description: "Custom remix video generation with profile picture",
       },
     },
     "/api/generate/custom-video": {
-      price: "$0.20",
+      price: "$2.00",
       network,
       config: {
         description: "Custom video generation (text-to-video)",

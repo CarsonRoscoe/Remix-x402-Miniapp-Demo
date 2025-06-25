@@ -1,26 +1,32 @@
-# AI Image Generator Mini App
+# AI Video Generator Mini App
 
-A Coinbase Wallet Mini App that generates AI images with x402 payment integration. Users can generate images using daily prompts or custom prompts, with payments processed through the x402 protocol.
+A Coinbase Wallet Mini App that generates AI videos with x402 payment integration. Users can create videos using daily prompts, custom prompts, or pure text-to-video generation, with payments processed through the x402 protocol.
 
 ## Features
 
-- 🎨 **Daily Prompt Generation**: Generate images with curated daily prompts ($0.05 USDC)
-- ✨ **Custom Prompt Generation**: Create images with your own prompts ($0.10 USDC)
-- 👤 **Profile Integration**: Remix prompts with your Farcaster profile picture
+- 🎬 **Daily Remix Videos**: Generate videos with curated daily prompts and your Farcaster profile picture ($0.50 USDC)
+- ✨ **Custom Remix Videos**: Create videos with your own prompts and Farcaster profile picture ($1.00 USDC)
+- 🎥 **Custom Videos**: Pure text-to-video generation without profile integration ($2.00 USDC)
+- 👤 **Farcaster Integration**: Automatically uses your Farcaster profile picture for remix videos
 - 💳 **x402 Payments**: Seamless payment processing on Base network
-- 🪙 **Zora Integration**: Mint generated images as NFTs
-- 📱 **Farcaster Sharing**: Share your creations on Farcaster
+- 🪙 **Zora Integration**: Mint generated videos as NFTs with Zora Coins
+- 📱 **Farcaster Sharing**: Share your creations directly on Farcaster
 - 🔗 **Wallet Integration**: Connect with Coinbase Wallet
+- 📚 **Video History**: View all your generated videos with metadata
+- 🎯 **Smart Categorization**: Videos are automatically labeled as Daily Remix, Custom Remix, or Custom Video
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, TypeScript
+- **Frontend**: Next.js 15, React 18, TypeScript
 - **Styling**: Tailwind CSS
-- **Wallet**: OnchainKit, Coinbase Wallet
+- **Wallet**: OnchainKit, Coinbase Wallet, Wagmi
 - **Payments**: x402 protocol
 - **Blockchain**: Base network (mainnet & testnet)
-- **AI**: Veo 3 (planned), placeholder implementation
+- **AI Video**: FAL AI (text-to-video generation)
 - **Social**: Farcaster API (Neynar)
+- **NFT Minting**: Zora Coins SDK
+- **Storage**: IPFS (Pinata)
+- **Database**: PostgreSQL with Prisma ORM
 
 ## Getting Started
 
@@ -29,7 +35,7 @@ A Coinbase Wallet Mini App that generates AI images with x402 payment integratio
 - Node.js 18+ 
 - npm, yarn, pnpm, or bun
 - Coinbase Wallet
-- Farcaster account
+- Farcaster account (for remix features)
 - API keys (see Environment Setup)
 
 ### Installation
@@ -58,7 +64,14 @@ cp env.example .env.local
 
 4. Configure your environment variables (see Environment Setup below)
 
-5. Run the development server:
+5. Set up the database:
+```bash
+npx prisma generate
+npx prisma db push
+npm run seed
+```
+
+6. Run the development server:
 ```bash
 npm run dev
 # or
@@ -69,7 +82,7 @@ pnpm dev
 bun dev
 ```
 
-6. Open [http://localhost:3000](http://localhost:3000) with your browser
+7. Open [http://localhost:3000](http://localhost:3000) with your browser
 
 ## Environment Setup
 
@@ -80,7 +93,7 @@ Copy `env.example` to `.env.local` and configure the following variables:
 ```bash
 # OnchainKit Configuration
 NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_api_key_here
-NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME=AI Image Generator Mini App
+NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME=AI Video Generator Mini App
 
 # x402 Payment Configuration
 PUBLIC_RESOURCE_WALLET_ADDRESS=0x0000000000000000000000000000000000000000
@@ -89,14 +102,25 @@ PUBLIC_NETWORK=base-sepolia
 # Farcaster API Configuration
 NEXT_PUBLIC_NEYNAR_API_KEY=your_neynar_api_key_here
 NEYNAR_API_KEY=your_neynar_api_key_here
+
+# FAL AI Configuration
+FAL_KEY=your_fal_ai_key_here
+
+# Database Configuration
+DATABASE_URL=your_postgresql_database_url_here
+
+# IPFS Configuration (Pinata)
+PINATA_JWT=your_pinata_jwt_token_here
 ```
 
 ### Getting API Keys
 
 1. **OnchainKit API Key**: Get from [OnchainKit](https://onchainkit.xyz)
 2. **Neynar API Key**: Get from [Neynar](https://neynar.com)
-3. **Resource Wallet Address**: Your wallet address to receive payments
-4. **Network**: Use `base-sepolia` for testing, `base` for production
+3. **FAL AI Key**: Get from [FAL AI](https://fal.ai)
+4. **Pinata JWT**: Get from [Pinata](https://pinata.cloud)
+5. **Resource Wallet Address**: Your wallet address to receive payments
+6. **Network**: Use `base-sepolia` for testing, `base` for production
 
 ## Usage
 
@@ -104,11 +128,22 @@ NEYNAR_API_KEY=your_neynar_api_key_here
 
 1. **Connect Wallet**: Click the wallet button in the top-right corner
 2. **Choose Generation Type**:
-   - **Prompt of the Day**: Click the blue button for curated prompts ($0.05 USDC)
-   - **Custom Prompt**: Click the purple button to enter your own prompt ($0.10 USDC)
+   - **Daily Remix**: Click the blue button for curated prompts with your Farcaster profile ($0.50 USDC)
+   - **Custom Remix**: Click the purple button to enter your own prompt with your Farcaster profile ($1.00 USDC)
+   - **Custom Video**: Click the green button for pure text-to-video generation ($2.00 USDC)
 3. **Payment**: Complete the x402 payment flow
-4. **Generate**: Wait for AI image generation
-5. **Share**: Coin on Zora or share on Farcaster
+4. **Generate**: Wait for AI video generation (may take 1-2 minutes)
+5. **View & Share**: 
+   - Watch your video in the modal player
+   - Mint as NFT on Zora
+   - Share on Farcaster (for remixes)
+6. **History**: Switch to the History tab to view all your generated videos
+
+### Video Types Explained
+
+- **Daily Remix**: Uses a curated daily prompt + your Farcaster profile picture
+- **Custom Remix**: Uses your custom prompt + your Farcaster profile picture  
+- **Custom Video**: Uses your custom prompt only (no profile picture)
 
 ### For Developers
 
@@ -117,8 +152,17 @@ NEYNAR_API_KEY=your_neynar_api_key_here
 ```
 app/
 ├── api/
-│   ├── generate-daily/     # Daily prompt generation API
-│   └── generate-custom/    # Custom prompt generation API
+│   ├── generate/
+│   │   ├── daily/          # Daily remix generation API
+│   │   ├── custom/         # Custom remix generation API
+│   │   └── custom-video/   # Custom video generation API
+│   ├── videos/             # Video history API
+│   ├── zora/               # Zora minting API
+│   └── db.ts               # Database operations
+├── components/
+│   ├── RemixCard.tsx       # Video display component
+│   ├── ZoraCoinButton.tsx  # Zora minting component
+│   └── ShareOnFarcaster.tsx # Farcaster sharing component
 ├── utils/
 │   └── farcaster.ts        # Farcaster API utilities
 ├── svg/                    # SVG components
@@ -130,49 +174,51 @@ app/
 #### Key Components
 
 - **x402 Middleware**: Protects API routes with payment requirements
-- **Farcaster Integration**: Fetches user profiles and IDs
-- **AI Generation**: Placeholder for Veo 3 integration
-- **Wallet Connection**: OnchainKit wallet integration
+- **Farcaster Integration**: Fetches user profiles and IDs for remix videos
+- **AI Video Generation**: FAL AI integration for text-to-video
+- **IPFS Storage**: Automatic video storage and pinning
+- **Zora Minting**: NFT creation with Zora Coins
+- **Database**: PostgreSQL with Prisma for video and remix tracking
 
-#### Customization
+#### Database Schema
 
-1. **Daily Prompts**: Update the `getDailyPrompt()` function in `/api/generate-daily/route.ts`
-2. **AI Model**: Replace placeholder in `generateAIImage()` functions
-3. **Styling**: Modify Tailwind classes in `app/page.tsx`
-4. **Payment Amounts**: Update prices in `middleware.ts`
+The app uses PostgreSQL with the following main entities:
+- **Users**: Wallet addresses and Farcaster IDs
+- **Videos**: Generated video metadata and IPFS URLs
+- **Remixes**: Video remixes with prompt and Zora metadata
+- **Prompts**: Daily prompts for remix generation
 
 ## Development
 
-### Adding AI Model Integration
+### Adding New AI Models
 
-Replace the placeholder `generateAIImage()` function in both API routes:
+The app currently uses FAL AI for video generation. To integrate other models, update the functions in `app/utils.ts`:
 
 ```typescript
-async function generateAIImage(prompt: string, profileImageUrl?: string): Promise<string> {
-  // Integrate with Veo 3, Replicate, or other AI services
-  const response = await fetch('https://api.veo3.com/generate', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.VEO3_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      prompt,
-      reference_image: profileImageUrl,
-      // other parameters
-    }),
-  });
-  
-  const data = await response.json();
-  return data.image_url;
+// For text-to-video with profile picture
+async function generateAIVideo(prompt: string, profileImageUrl: string): Promise<string> {
+  // Integrate with your preferred AI video service
+}
+
+// For pure text-to-video
+async function generateTextToVideo(prompt: string): Promise<string> {
+  // Integrate with your preferred AI video service
 }
 ```
+
+### Customization
+
+1. **Daily Prompts**: Update the prompts in the database using the seed script
+2. **Pricing**: Modify prices in `middleware.ts`
+3. **Styling**: Modify Tailwind classes in components
+4. **Video Processing**: Update video processing logic in `app/utils.ts`
 
 ### Testing
 
 1. **Local Development**: Use Base Sepolia testnet
 2. **Payment Testing**: Ensure you have test USDC on Sepolia
 3. **Farcaster Testing**: Use a wallet with a linked Farcaster account
+4. **Video Generation**: Test with FAL AI credits
 
 ## Deployment
 
@@ -186,6 +232,8 @@ npm run build
 3. **Configure production environment variables**
 
 4. **Update network to `base` for mainnet**
+
+5. **Set up production database**
 
 ## Contributing
 
