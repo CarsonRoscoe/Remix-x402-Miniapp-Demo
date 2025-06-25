@@ -81,6 +81,11 @@ export default function RootLayout({
         {/* Prevent zooming and ensure proper scaling in mini apps */}
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         
+        {/* Farcaster Mini App specific meta tags */}
+        <meta name="farcaster:app" content="Remix AI Video Generator" />
+        <meta name="farcaster:app:version" content="1.0.0" />
+        <meta name="farcaster:app:description" content="Transform your Farcaster profile into amazing videos with AI" />
+        
         {/* Favicon and app icons */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
