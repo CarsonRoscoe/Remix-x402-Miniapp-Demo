@@ -9,6 +9,49 @@ const config = new Configuration({
 
 const client = new NeynarAPIClient(config);
 
+// In-memory cache for Farcaster user data
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+
+const userCache = new Map<string, CacheEntry>();
+
+// Cache configuration
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
+// Cleanup old cache entries periodically
+let lastCleanup = Date.now();
+
+function cleanupCache() {
+  const now = Date.now();
+  if (now - lastCleanup > CACHE_CLEANUP_INTERVAL) {
+    for (const [key, entry] of userCache.entries()) {
+      if (now - entry.timestamp > CACHE_TTL) {
+        userCache.delete(key);
+      }
+    }
+    lastCleanup = now;
+  }
+}
+
+function getCachedUser(walletAddress: string) {
+  cleanupCache();
+  const entry = userCache.get(walletAddress);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+    return entry.data;
+  }
+  return null;
+}
+
+function setCachedUser(walletAddress: string, userData: any) {
+  userCache.set(walletAddress, {
+    data: userData,
+    timestamp: Date.now(),
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -21,10 +64,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await client.fetchBulkUsersByEthOrSolAddress({
-      addresses: [getAddress(walletAddress)]
-    });
+    const normalizedAddress = getAddress(walletAddress);
 
+    // Check cache first
+    const cachedUser = getCachedUser(normalizedAddress);
+    if (cachedUser) {
+      console.log(`Cache hit for wallet: ${normalizedAddress}`);
+      return NextResponse.json({
+        success: true,
+        user: cachedUser,
+        cached: true
+      });
+    }
+
+    console.log(`Cache miss for wallet: ${normalizedAddress}, fetching from API`);
+
+    const result = await client.fetchBulkUsersByEthOrSolAddress({
+      addresses: [normalizedAddress]
+    });
 
     const users = Object.values(result);
 
@@ -33,7 +90,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'No Farcaster user found for this wallet address',
         debug: {
-          searchedAddress: walletAddress,
+          searchedAddress: normalizedAddress,
         }
       });
     }
@@ -43,25 +100,30 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'No Farcaster user found for this wallet address',
         debug: {
-          searchedAddress: walletAddress,
+          searchedAddress: normalizedAddress,
         }
       });
     }
 
     const user = users[0][0];
+    const userData = {
+      fid: user.fid,
+      username: user.username,
+      displayName: user.display_name,
+      pfpUrl: user.pfp_url,
+      followerCount: user.follower_count,
+      followingCount: user.following_count,
+      verifications: user.verifications,
+      custodyAddress: user.custody_address,
+    };
+
+    // Cache the user data
+    setCachedUser(normalizedAddress, userData);
 
     return NextResponse.json({
       success: true,
-      user: {
-        fid: user.fid,
-        username: user.username,
-        displayName: user.display_name,
-        pfpUrl: user.pfp_url,
-        followerCount: user.follower_count,
-        followingCount: user.following_count,
-        verifications: user.verifications,
-        custodyAddress: user.custody_address,
-      }
+      user: userData,
+      cached: false
     });
 
   } catch (error) {
