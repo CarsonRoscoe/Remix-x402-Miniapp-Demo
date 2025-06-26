@@ -190,7 +190,7 @@ export async function generateTextToVideo(prompt: string): Promise<string> {
 
 // Enhances a base prompt with consistent remix instructions for video generation.
 export function createEnhancedPrompt(prompt: string, profileImageUrl?: string): string {
-  const videoInstruction = "Bring this scene to life with subtle, cinematic movement that enhances the magical atmosphere.";
+  const videoInstruction = "Bring this scene to life with subtle, cinematic movement that enhances the scene.";
   const remixInstruction = "Completely reimagine the subject's appearance and style while preserving its core essence.";
   
   if (profileImageUrl) {
