@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     title: 'Remix - AI Video Generation',
     description: 'Transform your Farcaster profile into amazing videos with AI. Powered by x402 payments.',
     type: 'website',
-    url: 'https://remix-miniapp.vercel.app',
+    url: 'https://www.remixme.xyz/',
     siteName: 'Remix',
     images: [
       {
@@ -82,7 +82,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         
         {/* Farcaster Mini App Embed - Required for Mini App discovery */}
-        <meta name="fc:frame" content='{"version":"next","imageUrl":"https://remix-x402-miniapp-demo.vercel.app/remix-logo.png","button":{"title":"🎬 Remix","action":{"type":"launch_frame","name":"Remix - AI Video Generator","url":"https://remix-x402-miniapp-demo.vercel.app/","splashImageUrl":"https://remix-x402-miniapp-demo.vercel.app/remix-logo-200x200.png","splashBackgroundColor":"#3b82f6"}}}' />
+        <meta name="fc:frame" content='{"version":"next","imageUrl":"https://www.remixme.xyz/remix-logo.png","button":{"title":"🎬 Remix","action":{"type":"launch_frame","name":"Remix - AI Video Generator","url":"https://www.remixme.xyz/","splashImageUrl":"https://www.remixme.xyz/remix-logo-200x200.png","splashBackgroundColor":"#3b82f6"}}}' />
         
         {/* Favicon and app icons */}
         <link rel="icon" href="/favicon.ico" />

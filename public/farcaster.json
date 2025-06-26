@@ -1,13 +1,13 @@
 {
   "version": "next",
-  "imageUrl": "https://remix-x402-miniapp-demo.vercel.app/remix-logo.png",
+  "imageUrl": "https://www.remixme.xyz/remix-logo.png",
   "button": {
     "title": "🎬 Remix",
     "action": {
       "type": "launch_frame",
       "name": "Remix - AI Video Generator",
-      "url": "https://remix-x402-miniapp-demo.vercel.app",
-      "splashImageUrl": "https://remix-x402-miniapp-demo.vercel.app/remix-logo-200x200.png",
+      "url": "https://www.remixme.xyz",
+      "splashImageUrl": "https://www.remixme.xyz/remix-logo-200x200.png",
       "splashBackgroundColor": "#3b82f6"
     }
   },
@@ -19,13 +19,13 @@
   "frame": {
     "version": "next",
     "name": "Remix",
-    "iconUrl": "https://x402miniapp.vercel.app/remix-logo.png",
-    "homeUrl": "https://x402miniapp.vercel.app",
-    "imageUrl": "https://x402miniapp.vercel.app/remix-logo.png",
+    "iconUrl": "https://www.remixme.xyz/remix-logo.png",
+    "homeUrl": "https://www.remixme.xyz",
+    "imageUrl": "https://www.remixme.xyz/remix-logo.png",
     "button": {
       "title": "Create AI Videos",
       "action": "launch_frame"
     },
-    "webhookUrl": "https://x402miniapp.vercel.app/api/webhook"
+    "webhookUrl": "https://www.remixme.xyz/api/webhook"
   }
 } 
