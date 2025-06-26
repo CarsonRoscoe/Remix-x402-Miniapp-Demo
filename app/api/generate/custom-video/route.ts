@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateTextToVideo } from '../../utils';
+import { generateAIVideo } from '../../utils';
 import { downloadFile, pinFileToIPFS } from '../../ipfs';
 import { createCustomVideo, getOrUpdateUser } from '../../db';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { prompt, walletAddress } = body; // Custom prompt and wallet address from the request
+    const { prompt, walletAddress, imageUrl } = body;
     
     if (!prompt || !walletAddress) {
       return NextResponse.json(
@@ -15,8 +15,15 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Generate AI video without profile picture (pure text-to-video)
-    const generatedVideoUrl = await generateTextToVideo(prompt);
+    if (!imageUrl) {
+      return NextResponse.json(
+        { error: 'Image URL is required for custom video generation' },
+        { status: 400 }
+      );
+    }
+    
+    // Generate AI video by remixing the provided image
+    const generatedVideoUrl = await generateAIVideo(prompt, imageUrl);
 
     const file = await downloadFile(generatedVideoUrl);
     const videoIpfs = await pinFileToIPFS(file, 'custom-video.mp4');
@@ -34,7 +41,7 @@ export async function POST(request: NextRequest) {
       success: true,
       videoUrl: generatedVideoUrl,
       ipfsUrl: videoIpfs,
-      profileImageUsed: false,
+      imageUrl: imageUrl,
       type: 'custom-video'
     });
     

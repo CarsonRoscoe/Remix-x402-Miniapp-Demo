@@ -54,9 +54,9 @@ export default function App() {
   const [customPrompt, setCustomPrompt] = useState('');
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [videoId, setVideoId] = useState<string | null>(null);
   const [remixId, setRemixId] = useState<string | null>(null);
   const [ipfsUrl, setIpfsUrl] = useState<string | null>(null);
+  const [customImageUrl, setCustomImageUrl] = useState('');
   
   // Data for history tab
   const [videos, setVideos] = useState<Video[]>([]);
@@ -212,6 +212,11 @@ export default function App() {
       return;
     }
     
+    if (generationType === 'custom-video' && !customImageUrl.trim()) {
+      setError('Please provide an image URL for custom video generation');
+      return;
+    }
+    
     if (!isConnected || !address) {
       setError('Please connect your wallet first');
       return;
@@ -266,7 +271,7 @@ export default function App() {
           break;
         case 'custom-video':
           endpoint = '/api/generate/custom-video';
-          payload = { prompt: customPrompt, walletAddress: address };
+          payload = { prompt: customPrompt, walletAddress: address, imageUrl: customImageUrl };
           break;
         default:
           throw new Error('Invalid generation type');
@@ -307,6 +312,7 @@ export default function App() {
     setGenerationType(null);
     setGenerationStatus('idle');
     setCustomPrompt('');
+    setCustomImageUrl('');
     setGeneratedVideo(null);
     setError(null);
     setRemixId(null);
@@ -391,7 +397,7 @@ export default function App() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white">Daily Remix</h3>
-                  <p className="text-blue-100 text-sm">Curated daily prompts with your profile</p>
+                  <p className="text-blue-100 text-sm">Curated daily prompts with your profile picture</p>
                 </div>
               </div>
               <div className="text-right">
@@ -445,11 +451,11 @@ export default function App() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white">Custom Video</h3>
-                  <p className="text-emerald-100 text-sm">Any video you can imagine</p>
+                  <p className="text-emerald-100 text-sm">Your prompt with any image</p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-white font-bold">$2.00</div>
+                <div className="text-white font-bold">$1.00</div>
                 <div className="text-emerald-100 text-xs">USDC</div>
               </div>
             </div>
@@ -542,20 +548,41 @@ export default function App() {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Custom Video</h2>
             <p className="text-slate-600 dark:text-slate-300">
-              Describe any video you want to generate
-        </p>
+              Remix any image into a video with your custom prompt
+            </p>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">
               The video generated will be 5 seconds long.
             </p>
           </div>
           
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg">
-            <textarea
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              placeholder="A majestic dragon soaring over a medieval castle at sunset with dramatic lighting..."
-              className="w-full p-4 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white resize-none h-32 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-            />
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Image URL to Remix
+              </label>
+              <input
+                type="url"
+                value={customImageUrl}
+                onChange={(e) => setCustomImageUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="w-full p-4 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+              />
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Provide a direct URL to an image you want to remix
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Remix Prompt
+              </label>
+              <textarea
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                placeholder="Transform this image into a majestic dragon soaring over a medieval castle at sunset with dramatic lighting..."
+                className="w-full p-4 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white resize-none h-32 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+              />
+            </div>
           </div>
           
           <div className="flex space-x-4">
@@ -569,7 +596,7 @@ export default function App() {
               onClick={handleCustomPromptSubmit}
               className="flex-1 py-4 px-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
             >
-              Generate ($2.00 USDC)
+              Generate ($1.00 USDC)
             </button>
           </div>
         </div>

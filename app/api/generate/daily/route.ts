@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createCustomRemix, createCustomVideo, createDailyRemix, getDailyPrompt, getOrUpdateUser } from '../../db';
+import { createDailyRemix, getDailyPrompt, getOrUpdateUser } from '../../db';
 import { downloadFile, pinFileToIPFS } from '../../ipfs';
-import { createEnhancedPrompt, generateAIVideo, generateTextToVideo, getFarcasterProfile } from '../../utils';
+import { createEnhancedPrompt, generateAIVideo, getFarcasterProfile } from '../../utils';
 
 export async function POST(request: NextRequest) {
   try {

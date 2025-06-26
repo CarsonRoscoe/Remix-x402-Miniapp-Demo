@@ -31,11 +31,8 @@ export async function POST(request: NextRequest) {
 
     const { pfpUrl, farcasterId } = profile;
     
-    // Create enhanced prompt with profile remix
-    const enhancedPrompt = createEnhancedPrompt(prompt, pfpUrl);
-    
     // Generate AI video with profile picture
-    const generatedVideoUrl = await generateAIVideo(enhancedPrompt, pfpUrl);
+    const generatedVideoUrl = await generateAIVideo(prompt, pfpUrl);
     const file = await downloadFile(generatedVideoUrl);
     const videoIpfs = await pinFileToIPFS(file, 'custom-video.mp4');
 
@@ -53,11 +50,10 @@ export async function POST(request: NextRequest) {
       success: true,
       videoUrl: generatedVideoUrl,
       ipfsUrl: videoIpfs,
-      prompt: enhancedPrompt,
+      prompt,
       profileImageUsed: true,
       type: 'custom-remix'
     });
-    
   } catch (error) {
     console.error('Error in generate-custom:', error);
     return NextResponse.json(

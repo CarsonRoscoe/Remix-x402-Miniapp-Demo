@@ -23,10 +23,10 @@ export const middleware = paymentMiddleware(
       },
     },
     "/api/generate/custom-video": {
-      price: "$2.00",
+      price: "$1.00",
       network,
       config: {
-        description: "Custom video generation (text-to-video)",
+        description: "Custom remix video generation with any picture",
       },
     },
   },

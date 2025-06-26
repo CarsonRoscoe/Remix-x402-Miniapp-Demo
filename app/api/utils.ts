@@ -102,19 +102,13 @@ export async function getFarcasterProfile(walletAddress: string): Promise<{ farc
 }
 
 // Function to generate AI video using Kling 2.1 Master image-to-video
-export async function generateAIVideo(prompt: string, profileImageUrl?: string): Promise<string> {
+export async function generateAIVideo(prompt: string, profileImageUrl: string): Promise<string> {
   // Remove special characters from prompt
   prompt = prompt.replace(/[^a-zA-Z0-9\s]/g, '');
 
   try {
     console.log('Generating AI video with prompt:', prompt);
     console.log('Profile image URL:', profileImageUrl);
-
-    // If no profile image, use a text-to-video approach
-    if (!profileImageUrl) {
-      console.log('No profile image provided, using text-to-video fallback');
-      return await generateTextToVideo(prompt);
-    }
 
     // Upload the profile image to fal.ai storage first
     console.log('Uploading profile image to fal.ai storage...');
@@ -153,38 +147,6 @@ export async function generateAIVideo(prompt: string, profileImageUrl?: string):
     console.error(JSON.stringify((error as any)?.body ?? {}, null, 2));
     // Fallback to placeholder video
     throw new Error('No video generated from image-to-video');
-  }
-}
-
-// Fallback function for text-to-video when no profile picture is available
-export async function generateTextToVideo(prompt: string): Promise<string> {
-  try {
-    const result = await fal.subscribe("fal-ai/kling-video/v2/master/text-to-video", {
-      input: {
-        prompt: prompt,
-        duration: "5", // 5 second video
-        negative_prompt: "blur, distort, low quality, ugly, bad anatomy, cartoon, illustration",
-        cfg_scale: 0.8, // Balanced guidance for creative but coherent results
-      },
-      logs: true,
-      onQueueUpdate: (update) => {
-        if (update.status === "IN_PROGRESS") {
-          update.logs.map((log) => log.message).forEach(console.log);
-        }
-      },
-    });
-
-    console.log('Text-to-video response:', result.data);
-    
-    if (result.data.video && result.data.video.url) {
-      return result.data.video.url;
-    } else {
-      throw new Error('No video generated from text-to-video');
-    }
-
-  } catch (error) {
-    console.error('Error in text-to-video fallback:', error);
-    throw new Error('No video generated from text-to-video');
   }
 }
 
