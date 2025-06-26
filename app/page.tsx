@@ -56,6 +56,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [remixId, setRemixId] = useState<string | null>(null);
   const [ipfsUrl, setIpfsUrl] = useState<string | null>(null);
+  const [isInMiniApp, setIsInMiniApp] = useState(false);
   const [customImageUrl, setCustomImageUrl] = useState('');
   
   // Data for history tab
@@ -77,6 +78,10 @@ export default function App() {
         // Signal that the Mini App is ready (hides splash screen)
         await sdk.actions.ready();
         console.log('Mini App ready signal sent');
+
+        const isInMiniApp = await sdk.isInMiniApp();
+        console.log('Is in Mini App:', isInMiniApp);
+        setIsInMiniApp(isInMiniApp);
       } catch (error) {
         console.log('Not running in Mini App context or SDK not available:', error);
       }
@@ -466,6 +471,7 @@ export default function App() {
       {/* Add Mini App for Notifications */}
       {isConnected && 
        farcasterUser && 
+       isInMiniApp &&
        !isNotificationEnrolled && 
        !checkingNotificationStatus &&
        generationType === null && 
@@ -491,6 +497,7 @@ export default function App() {
       {/* Notification Status Loading */}
       {isConnected && 
        farcasterUser && 
+       isInMiniApp &&
        checkingNotificationStatus &&
        generationType === null && 
        generationStatus === 'idle' && (
