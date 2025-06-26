@@ -292,3 +292,94 @@ export async function updateCustomRemix(
     },
   });
 }
+
+// Get all active notification tokens
+export async function getNotificationTokens() {
+  await ensureConnected();
+  
+  return prisma.notificationToken.findMany({
+    where: {
+      isActive: true,
+    },
+  });
+}
+
+// Get notification token by Farcaster ID
+export async function getNotificationTokenByFid(fid: number) {
+  await ensureConnected();
+  
+  return prisma.notificationToken.findUnique({
+    where: {
+      fid: fid,
+    },
+  });
+}
+
+// Update multiple notification tokens (mark as inactive)
+export async function updateManyNotificationTokens(tokenList: string[]) {
+  await ensureConnected();
+  
+  if (tokenList.length === 0) {
+    return { count: 0 };
+  }
+  
+  return prisma.notificationToken.updateMany({
+    where: {
+      token: {
+        in: tokenList,
+      },
+    },
+    data: {
+      isActive: false,
+      updatedAt: new Date(),
+    },
+  });
+}
+
+// Upsert notification token (create or update)
+export async function upsertNotificationToken({
+  fid,
+  token,
+  url,
+  isActive = true,
+}: {
+  fid: number;
+  token: string;
+  url: string;
+  isActive?: boolean;
+}) {
+  await ensureConnected();
+  
+  return prisma.notificationToken.upsert({
+    where: {
+      fid: fid,
+    },
+    update: {
+      token,
+      url,
+      isActive,
+      updatedAt: new Date(),
+    },
+    create: {
+      fid,
+      token,
+      url,
+      isActive,
+    },
+  });
+}
+
+// Update notification tokens by FID (mark as inactive)
+export async function updateNotificationTokensByFid(fid: number, isActive: boolean = false) {
+  await ensureConnected();
+  
+  return prisma.notificationToken.updateMany({
+    where: {
+      fid: fid,
+    },
+    data: {
+      isActive,
+      updatedAt: new Date(),
+    },
+  });
+}

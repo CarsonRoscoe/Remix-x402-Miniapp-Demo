@@ -62,6 +62,10 @@ export default function App() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
 
+  // Mini App and notification state
+  const [isNotificationEnrolled, setIsNotificationEnrolled] = useState(false);
+  const [checkingNotificationStatus, setCheckingNotificationStatus] = useState(false);
+
   // Initialize Farcaster Mini App SDK
   useEffect(() => {
     const initMiniApp = async () => {
@@ -80,6 +84,45 @@ export default function App() {
 
     initMiniApp();
   }, []);
+
+  // Check notification enrollment status when Farcaster user is loaded
+  useEffect(() => {
+    const checkNotificationStatus = async () => {
+      if (!farcasterUser?.fid) return;
+      
+      setCheckingNotificationStatus(true);
+      try {
+        const response = await fetch('/api/notifications/check', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ farcasterId: farcasterUser.fid }),
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          setIsNotificationEnrolled(data.isEnrolled);
+        }
+      } catch (error) {
+        console.error('Error checking notification status:', error);
+      } finally {
+        setCheckingNotificationStatus(false);
+      }
+    };
+
+    checkNotificationStatus();
+  }, [farcasterUser?.fid]);
+
+  // Function to prompt users to add the Mini App for notifications
+  const handleAddMiniApp = async () => {
+    try {
+      await sdk.actions.addMiniApp();
+      console.log('Mini App add prompt sent');
+    } catch (error) {
+      console.error('Failed to prompt for Mini App addition:', error);
+    }
+  };
 
   const fetchVideos = useCallback(async () => {
     if (!address) return;
@@ -414,6 +457,49 @@ export default function App() {
         </div>
       )}
 
+      {/* Add Mini App for Notifications */}
+      {isConnected && 
+       farcasterUser && 
+       !isNotificationEnrolled && 
+       !checkingNotificationStatus &&
+       generationType === null && 
+       generationStatus === 'idle' && (
+        <div className="text-center py-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+            <h4 className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-2">
+              Get Daily Remix Notifications! 🔔
+            </h4>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mb-3">
+              Receive notifications when new daily remixes are available.
+            </p>
+            <button
+              onClick={handleAddMiniApp}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+            >
+              Add to Farcaster
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Status Loading */}
+      {isConnected && 
+       farcasterUser && 
+       checkingNotificationStatus &&
+       generationType === null && 
+       generationStatus === 'idle' && (
+        <div className="text-center py-4">
+          <div className="bg-slate-50 dark:bg-slate-900/20 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-200 border-t-blue-600"></div>
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                Checking notification status...
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Custom Remix Input */}
       {generationType === 'custom-remix' && generationStatus === 'idle' && (
         <div className="space-y-6">
@@ -570,6 +656,19 @@ export default function App() {
               Create Another
             </button>
         </div>
+        </div>
+      )}
+
+      {/* Connection Prompt */}
+      {!isConnected && (
+        <div className="text-center py-8">
+          <div className="bg-white/10 rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-2">Connect Your Wallet</h3>
+            <p className="text-gray-300 mb-4">
+              Connect your wallet to start creating AI-generated videos and access your history.
+            </p>
+            <Wallet />
+          </div>
         </div>
       )}
     </>

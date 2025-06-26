@@ -10,5 +10,22 @@
       "splashImageUrl": "https://remix-x402-miniapp-demo.vercel.app/remix-logo-200x200.png",
       "splashBackgroundColor": "#3b82f6"
     }
+  },
+  "accountAssociation": {
+    "header": "eyJmaWQiOjU0NDgsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg2MWQwMEFENzYwNjhGOEQ0NzQwYzM1OEM4QzAzYUFFYjUxMGI1OTBEIn0",
+    "payload": "eyJkb21haW4iOiJleGFtcGxlLmNvbSJ9",
+    "signature": "MHg3NmRkOWVlMjE4OGEyMjliNzExZjUzOTkxYTc1NmEzMGZjNTA3NmE5OTU5OWJmOWFmYjYyMzAyZWQxMWQ2MWFmNTExYzlhYWVjNjQ3OWMzODcyMTI5MzA2YmJhYjdhMTE0MmRhMjA4MmNjNTM5MTJiY2MyMDRhMWFjZTY2NjE5OTFj"
+  },
+  "frame": {
+    "version": "next",
+    "name": "Remix",
+    "iconUrl": "https://x402miniapp.vercel.app/remix-logo.png",
+    "homeUrl": "https://x402miniapp.vercel.app",
+    "imageUrl": "https://x402miniapp.vercel.app/remix-logo.png",
+    "button": {
+      "title": "Create AI Videos",
+      "action": "launch_frame"
+    },
+    "webhookUrl": "https://x402miniapp.vercel.app/api/webhook"
   }
 } 
