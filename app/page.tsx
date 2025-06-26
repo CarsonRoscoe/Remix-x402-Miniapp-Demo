@@ -10,6 +10,7 @@ import { useFarcaster } from './utils/farcaster';
 import { ZoraCoinButton } from './components/ZoraCoinButton';
 import { RemixCard } from './components/RemixCard';
 import { ShareOnFarcaster } from './components/ShareOnFarcaster';
+import { sdk } from '@farcaster/frame-sdk';
 
 type GenerationType = 'daily-remix' | 'custom-remix' | 'custom-video' | null;
 type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
@@ -60,6 +61,25 @@ export default function App() {
   // Data for history tab
   const [videos, setVideos] = useState<Video[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
+
+  // Initialize Farcaster Mini App SDK
+  useEffect(() => {
+    const initMiniApp = async () => {
+      try {
+        // Check if we're running in a Mini App context
+        const context = sdk.context;
+        console.log('Mini App context:', context);
+        
+        // Signal that the Mini App is ready (hides splash screen)
+        await sdk.actions.ready();
+        console.log('Mini App ready signal sent');
+      } catch (error) {
+        console.log('Not running in Mini App context or SDK not available:', error);
+      }
+    };
+
+    initMiniApp();
+  }, []);
 
   const fetchVideos = useCallback(async () => {
     if (!address) return;

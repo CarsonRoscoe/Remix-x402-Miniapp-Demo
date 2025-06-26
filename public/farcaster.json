@@ -1,31 +1,14 @@
 {
-  "frame": {
-    "version": "1",
-    "name": "Remix",
-    "iconUrl": "https://remix-miniapp.vercel.app/remix-logo.png",
-    "splashImageUrl": "https://remix-miniapp.vercel.app/remix-logo.png",
-    "splashBackgroundColor": "#3b82f6",
-    "homeUrl": "https://remix-miniapp.vercel.app",
-    "webhookUrl": "https://remix-miniapp.vercel.app/api/webhook",
-    "subtitle": "AI Video Generation with x402",
-    "description": "Transform your Farcaster profile into amazing videos with AI. Generate daily remixes, custom videos, and mint as NFTs with Zora Coins. Powered by x402 payments on Base network.",
-    "screenshotUrls": [
-      "https://remix-miniapp.vercel.app/screenshot1.png",
-      "https://remix-miniapp.vercel.app/screenshot2.png",
-      "https://remix-miniapp.vercel.app/screenshot3.png"
-    ],
-    "primaryCategory": "entertainment",
-    "tags": [
-      "ai",
-      "video",
-      "farcaster",
-      "nft",
-      "base"
-    ],
-    "heroImageUrl": "https://remix-miniapp.vercel.app/remix-logo.png",
-    "tagline": "AI Video Generation with x402",
-    "ogTitle": "Remix - AI Video Generator",
-    "ogDescription": "Transform your Farcaster profile into amazing videos with AI. Powered by x402 payments on Base network.",
-    "ogImageUrl": "https://remix-miniapp.vercel.app/remix-logo.png"
+  "version": "next",
+  "imageUrl": "https://remix-x402-miniapp-demo.vercel.app/remix-logo.png",
+  "button": {
+    "title": "🎬 Remix",
+    "action": {
+      "type": "launch_frame",
+      "name": "Remix - AI Video Generator",
+      "url": "https://remix-x402-miniapp-demo.vercel.app",
+      "splashImageUrl": "https://remix-x402-miniapp-demo.vercel.app/remix-logo-200x200.png",
+      "splashBackgroundColor": "#3b82f6"
+    }
   }
 } 

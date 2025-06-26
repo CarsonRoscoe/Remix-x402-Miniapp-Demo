@@ -81,10 +81,8 @@ export default function RootLayout({
         {/* Prevent zooming and ensure proper scaling in mini apps */}
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         
-        {/* Farcaster Mini App specific meta tags */}
-        <meta name="farcaster:app" content="Remix AI Video Generator" />
-        <meta name="farcaster:app:version" content="1.0.0" />
-        <meta name="farcaster:app:description" content="Transform your Farcaster profile into amazing videos with AI" />
+        {/* Farcaster Mini App Embed - Required for Mini App discovery */}
+        <meta name="fc:frame" content='{"version":"next","imageUrl":"https://remix-x402-miniapp-demo.vercel.app/remix-logo.png","button":{"title":"🎬 Remix","action":{"type":"launch_frame","name":"Remix - AI Video Generator","url":"https://remix-x402-miniapp-demo.vercel.app/","splashImageUrl":"https://remix-x402-miniapp-demo.vercel.app/remix-logo-200x200.png","splashBackgroundColor":"#3b82f6"}}}' />
         
         {/* Favicon and app icons */}
         <link rel="icon" href="/favicon.ico" />
@@ -93,6 +91,7 @@ export default function RootLayout({
         {/* Preconnect to external domains for better performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://auth.farcaster.xyz" />
       </head>
       <body className={`${inter.className} h-full antialiased`}>
         <Providers>
