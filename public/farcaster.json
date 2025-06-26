@@ -12,9 +12,9 @@
     }
   },
   "accountAssociation": {
-    "header": "eyJmaWQiOjU0NDgsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg2MWQwMEFENzYwNjhGOEQ0NzQwYzM1OEM4QzAzYUFFYjUxMGI1OTBEIn0",
-    "payload": "eyJkb21haW4iOiJleGFtcGxlLmNvbSJ9",
-    "signature": "MHg3NmRkOWVlMjE4OGEyMjliNzExZjUzOTkxYTc1NmEzMGZjNTA3NmE5OTU5OWJmOWFmYjYyMzAyZWQxMWQ2MWFmNTExYzlhYWVjNjQ3OWMzODcyMTI5MzA2YmJhYjdhMTE0MmRhMjA4MmNjNTM5MTJiY2MyMDRhMWFjZTY2NjE5OTFj"
+    "header": "eyJmaWQiOjEwNDIyNDYsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhjQ0U5Y0Y2NzMwYjVjNDdiZjIxNzExQTEyQjM5OTgyYzZEZTlBRjZCIn0",
+    "payload": "eyJkb21haW4iOiJodHRwczovL3d3dy5yZW1peG1lLnh5eiJ9",
+    "signature": "Ic9hJ-CXOVIRJSiViGctAmwusXi5-yH8mBFmEzyU8B87MqPqwwIOkwxtFhukl986bOvsp1elccPj0b7u_WHTFhs"
   },
   "frame": {
     "version": "next",
