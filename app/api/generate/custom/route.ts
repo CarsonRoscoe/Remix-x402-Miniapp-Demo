@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { 
   getFarcasterProfile, 
   generateAIVideo, 
-  createEnhancedPrompt 
 } from '../../utils';
 import { downloadFile, pinFileToIPFS } from '../../ipfs';
 import { createCustomRemix, getOrUpdateUser } from '../../db';

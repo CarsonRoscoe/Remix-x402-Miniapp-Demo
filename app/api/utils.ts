@@ -149,14 +149,3 @@ export async function generateAIVideo(prompt: string, profileImageUrl: string): 
     throw new Error('No video generated from image-to-video');
   }
 }
-
-// Enhances a base prompt with consistent remix instructions for video generation.
-export function createEnhancedPrompt(prompt: string, profileImageUrl?: string): string {
-  const videoInstruction = "Bring this scene to life with subtle, cinematic movement that enhances the scene.";
-  const remixInstruction = "Completely reimagine the subject's appearance and style while preserving its core essence.";
-  
-  if (profileImageUrl) {
-    return `${prompt} ${remixInstruction} ${videoInstruction}`;
-  }
-  return `${prompt} ${videoInstruction}`;
-}

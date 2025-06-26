@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createDailyRemix, getDailyPrompt, getOrUpdateUser } from '../../db';
 import { downloadFile, pinFileToIPFS } from '../../ipfs';
-import { createEnhancedPrompt, generateAIVideo, getFarcasterProfile } from '../../utils';
+import { generateAIVideo, getFarcasterProfile } from '../../utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,11 +28,7 @@ export async function POST(request: NextRequest) {
 
     const { pfpUrl, farcasterId } = profile;
 
-    // Create enhanced prompt with profile remix
-    const enhancedPrompt = createEnhancedPrompt(dailyPrompt.prompt, pfpUrl);
-
-    // Generate AI video with profile picture
-    const generatedVideoUrl = await generateAIVideo(enhancedPrompt, pfpUrl);
+    const generatedVideoUrl = await generateAIVideo(dailyPrompt.prompt, pfpUrl);
     const file = await downloadFile(generatedVideoUrl);
     const videoIpfs = await pinFileToIPFS(file, 'custom-video.mp4');
 
