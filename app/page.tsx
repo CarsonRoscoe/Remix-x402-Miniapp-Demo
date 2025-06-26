@@ -685,19 +685,6 @@ export default function App() {
         </div>
         </div>
       )}
-
-      {/* Connection Prompt */}
-      {!isConnected && (
-        <div className="text-center py-8">
-          <div className="bg-white/10 rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-2">Connect Your Wallet</h3>
-            <p className="text-gray-300 mb-4">
-              Connect your wallet to start creating AI-generated videos and access your history.
-            </p>
-            <Wallet />
-          </div>
-        </div>
-      )}
     </>
   );
 
