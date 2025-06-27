@@ -2,10 +2,10 @@
   "version": "next",
   "imageUrl": "https://www.remixme.xyz/remix-logo.png",
   "button": {
-    "title": "🎬 Remix",
+    "title": "🎬 Remix Me",
     "action": {
       "type": "launch_frame",
-      "name": "Remix - AI Video Generator",
+      "name": "Remix Me - AI Video Generator",
       "url": "https://www.remixme.xyz",
       "splashImageUrl": "https://www.remixme.xyz/remix-logo-200x200.png",
       "splashBackgroundColor": "#3b82f6"
@@ -18,7 +18,7 @@
   },
   "frame": {
     "version": "next",
-    "name": "Remix",
+    "name": "Remix Me",
     "iconUrl": "https://www.remixme.xyz/remix-logo.png",
     "homeUrl": "https://www.remixme.xyz",
     "imageUrl": "https://www.remixme.xyz/remix-logo.png",

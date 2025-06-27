@@ -1,6 +1,6 @@
 {
-  "name": "Remix - AI Video Generation",
-  "short_name": "Remix",
+  "name": "Remix Me - AI Video Generation",
+  "short_name": "Remix Me",
   "description": "Transform your Farcaster profile into amazing videos with AI",
   "start_url": "/",
   "display": "standalone",

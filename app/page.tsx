@@ -156,20 +156,6 @@ export default function App() {
     }
   }, [activeTab, isConnected, address, fetchVideos]);
 
-  const getVideoTypeLabel = (video: Video) => {
-    if (video.remix) {
-      // Has remix metadata
-      if (video.remix.promptId) {
-        return 'Daily Remix';
-      } else {
-        return 'Custom Remix';
-      }
-    } else {
-      // No remix metadata
-      return 'Custom Video';
-    }
-  };
-
   const handleDailyRemix = async () => {
     if (!isConnected || !address) {
       setError('Please connect your wallet first');
@@ -743,7 +729,7 @@ export default function App() {
                 <div className="w-8 h-8 text-blue-600 dark:text-blue-400">
                   <img src="/remix-logo.png" alt="Remix Logo" className="w-8 h-8" />
                 </div>
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white">Remix</h1>
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white">Remix Me</h1>
               </div>
               <div className="flex items-center justify-center space-x-1 ml-1 text-sm text-slate-500 dark:text-slate-400">
                 <span>Powered by</span>
