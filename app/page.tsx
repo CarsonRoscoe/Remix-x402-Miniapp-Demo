@@ -454,7 +454,9 @@ export default function App() {
         </div>
       )}
 
+      {/** TODO: Re-add notification registration */}
       {/* Add Mini App for Notifications */}
+      {/*
       {isConnected && 
        farcasterUser && 
        isInMiniApp &&
@@ -480,8 +482,9 @@ export default function App() {
         </div>
       )}
 
+      {/** TODO: Re-add notification registration */}
       {/* Notification Status Loading */}
-      {isConnected && 
+      {/* {isConnected && 
        farcasterUser && 
        isInMiniApp &&
        checkingNotificationStatus &&
@@ -497,7 +500,7 @@ export default function App() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Custom Remix Input */}
       {generationType === 'custom-remix' && generationStatus === 'idle' && (
