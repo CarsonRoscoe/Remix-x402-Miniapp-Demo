@@ -50,6 +50,7 @@ export function ZoraCoinButton({
   const [mintError, setMintError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [localIsMinted, setLocalIsMinted] = useState(isMinted);
+  const [showManualInstructions, setShowManualInstructions] = useState(false);
 
   useEffect(() => {
     setLocalIsMinted(isMinted);
@@ -175,6 +176,7 @@ export function ZoraCoinButton({
     setPinError(null);
     setMetadataUri(null);
     setMintError(null);
+    setShowManualInstructions(false);
   };
 
   const handlePinAndFetchMetadata = async () => {
@@ -339,7 +341,61 @@ export function ZoraCoinButton({
               &times;
             </button>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Coin on Zora</h2>
-            {pinningState === 'idle' && (
+            
+            {/* Experimental Feature Warning */}
+            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+              <div className="flex items-start space-x-2">
+                <span className="text-amber-600 dark:text-amber-400 text-lg">⚠️</span>
+                <div className="text-sm">
+                  <div className="font-semibold text-amber-800 dark:text-amber-300 mb-1">Experimental Feature</div>
+                  <div className="text-amber-700 dark:text-amber-400">
+                    This automated coin creation is experimental. If it doesn't work, you can manually create your coin on Zora.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowManualInstructions(!showManualInstructions)}
+                    className="mt-2 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium underline"
+                  >
+                    {showManualInstructions ? 'Show Form' : 'Show Manual Instructions'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Manual Instructions */}
+            {showManualInstructions && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                <div className="text-sm">
+                  <div className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Manual Coin Creation Steps:</div>
+                  <ol className="list-decimal list-inside space-y-1 text-blue-700 dark:text-blue-400">
+                    <li>Go to <a href="https://zora.co/coin" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900 dark:hover:text-blue-200">zora.co/coin</a></li>
+                    <li>Connect your wallet</li>
+                    <li>Fill in your coin details:
+                      <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                        <li><strong>Name:</strong> Your coin name</li>
+                        <li><strong>Symbol:</strong> Your coin symbol (3-6 characters)</li>
+                        <li><strong>Description:</strong> Describe your coin</li>
+                        <li><strong>Image:</strong> Upload your video or image</li>
+                      </ul>
+                    </li>
+                    <li>Set your payout recipient (your wallet address)</li>
+                    <li>Choose your currency (ZORA or ETH)</li>
+                    <li>Deploy your coin</li>
+                  </ol>
+                  <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                    💡 Tip: You can use your video IPFS URL: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{videoIpfs}</code>
+                    {coinName && (
+                      <div className="mt-1">
+                        📝 Suggested values: Name: "{coinName}", Symbol: "{coinSymbol}"
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Form - only show when manual instructions are hidden */}
+            {!showManualInstructions && pinningState === 'idle' && (
               <form onSubmit={async e => {
                 e.preventDefault();
                 await handlePinAndFetchMetadata();
@@ -420,59 +476,65 @@ export function ZoraCoinButton({
                 </div>
               </form>
             )}
-            {pinningState === 'pinning' && (
-              <div className="flex flex-col items-center justify-center py-6">
-                <div className="spinner w-10 h-10 mb-4" />
-                <div className="text-slate-700 dark:text-slate-200 font-medium">Uploading to IPFS via Pinata...</div>
-              </div>
-            )}
-            {pinningState === 'error' && (
-              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400">
-                <div className="font-medium">{pinError}</div>
-                <button
-                  className="mt-2 btn-secondary"
-                  onClick={handlePinAndFetchMetadata}
-                >
-                  Retry Pinning
-                </button>
-              </div>
-            )}
-            {pinningState === 'pinned' && metadataUri && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="mb-2 p-2 bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-green-700 dark:text-green-400">
-                  Metadata pinned to IPFS!
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Metadata URI</label>
-                  <input
-                    type="text"
-                    value={metadataUri}
-                    className="input-field"
-                    readOnly
-                  />
-                </div>
-                {mintError && (
-                  <div className="mb-2 p-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400">
-                    {mintError}
+            
+            {/* Other states - only show when manual instructions are hidden */}
+            {!showManualInstructions && (
+              <>
+                {pinningState === 'pinning' && (
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <div className="spinner w-10 h-10 mb-4" />
+                    <div className="text-slate-700 dark:text-slate-200 font-medium">Uploading to IPFS via Pinata...</div>
                   </div>
                 )}
-                <div className="flex space-x-4 pt-4">
-                  <button
-                    type="button"
-                    className="btn-secondary flex-1"
-                    onClick={() => setShowModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-primary flex-1"
-                    disabled={isPending}
-                  >
-                    {isPending ? 'Minting...' : 'Create Coin'}
-                  </button>
-                </div>
-              </form>
+                {pinningState === 'error' && (
+                  <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400">
+                    <div className="font-medium">{pinError}</div>
+                    <button
+                      className="mt-2 btn-secondary"
+                      onClick={handlePinAndFetchMetadata}
+                    >
+                      Retry Pinning
+                    </button>
+                  </div>
+                )}
+                {pinningState === 'pinned' && metadataUri && (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="mb-2 p-2 bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-green-700 dark:text-green-400">
+                      Metadata pinned to IPFS!
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Metadata URI</label>
+                      <input
+                        type="text"
+                        value={metadataUri}
+                        className="input-field"
+                        readOnly
+                      />
+                    </div>
+                    {mintError && (
+                      <div className="mb-2 p-2 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400">
+                        {mintError}
+                      </div>
+                    )}
+                    <div className="flex space-x-4 pt-4">
+                      <button
+                        type="button"
+                        className="btn-secondary flex-1"
+                        onClick={() => setShowModal(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn-primary flex-1"
+                        disabled={isPending}
+                      >
+                        {isPending ? 'Minting...' : 'Create Coin'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </>
             )}
           </div>
         </div>
