@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getVideos } from '../db';
-import { getOrUpdateUser } from '../db';
+import { getUser, getVideos } from '../db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,28 +7,21 @@ export async function GET(request: NextRequest) {
     const walletAddress = searchParams.get('walletAddress');
 
     if (!walletAddress) {
-      return NextResponse.json({ error: 'Wallet address is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing walletAddress parameter' }, { status: 400 });
     }
 
-    // Get or create user
-    const user = await getOrUpdateUser({ walletAddress });
+    // Look up the user by wallet address
+    const user = await getUser(walletAddress);
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ success: true, videos: [] });
     }
 
-    // Get videos for the user
+    // Fetch videos for the user ID
     const videos = await getVideos(user.id);
 
-    return NextResponse.json({ 
-      success: true, 
-      videos 
-    });
-
+    return NextResponse.json({ success: true, videos });
   } catch (error) {
-    console.error('Error fetching videos:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch videos' }, 
-      { status: 500 }
-    );
+    console.error('Error in /api/videos:', error);
+    return NextResponse.json({ error: 'Failed to fetch videos' }, { status: 500 });
   }
 } 

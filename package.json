@@ -8,12 +8,15 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "tsx scripts/seed-daily-prompts.ts",
+    "worker": "node scripts/trigger-worker.js",
+    "worker:dev": "node scripts/worker-dev.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {
     "@coinbase/onchainkit": "latest",
     "@coinbase/x402": "latest",
     "@fal-ai/client": "^1.5.0",
+    "@fal-ai/serverless-client": "^0.15.0",
     "@farcaster/frame-node": "^0.0.41",
     "@farcaster/frame-sdk": "^0.0.53",
     "@neynar/nodejs-sdk": "latest",

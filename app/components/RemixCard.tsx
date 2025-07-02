@@ -8,7 +8,7 @@ import { Coins, FileText } from 'lucide-react';
 interface Video {
   id: string;
   videoIpfs: string;
-  videoUrl?: string; // Original video URL from AI generation
+  videoUrl?: string; // Original video URL from AI generation (temporary, 7 days)
   type: string;
   createdAt: string;
   remix?: {
@@ -38,6 +38,7 @@ interface RemixCardProps {
   video: Video;
   address?: string;
   chainId?: number;
+  onRefresh?: () => void;
 }
 
 const getVideoTypeLabel = (video: Video) => {
@@ -68,7 +69,7 @@ const getVideoTitle = (video: Video) => {
   }
 };
 
-export function RemixCard({ video, address, chainId }: RemixCardProps) {
+export function RemixCard({ video, address, chainId, onRefresh }: RemixCardProps) {
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
 
@@ -76,7 +77,15 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
   const isMinted = video.remix?.isMinted;
   const hasZoraData = !!video.remix?.zoraCoinData;
   const isDailyRemix = !!video.remix?.promptId;
-  const ipfsUrl = `https://ipfs.io/ipfs/${video.videoIpfs.replace('ipfs://', '')}`;
+  const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${video.videoIpfs.replace('ipfs://', '')}`;
+
+  // Callback to refresh data when minting is complete
+  const handleMintComplete = () => {
+    // Trigger a page refresh or data refetch
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
 
   return (
     <>
@@ -109,7 +118,7 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
                 <Coins className="w-5 h-5" />
               </button>
               <ShareOnFarcaster
-                videoUrl={video.videoUrl}
+                videoUrl={ipfsUrl}
                 ipfsUrl={ipfsUrl}
                 className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
                 iconOnly={true}
@@ -135,15 +144,18 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
                 address={address}
                 chainId={chainId}
                 remixId={video.remix?.id}
+                isMinted={isMinted}
+                zoraCoinData={video.remix?.zoraCoinData}
                 defaultName={isDailyRemix ? "Daily Remix Coin" : "Custom Remix Coin"}
                 defaultSymbol={isDailyRemix ? "DRC" : "CRC"}
                 defaultDescription={`${isDailyRemix ? "Daily" : "Custom"} remix coin created on ${new Date(video.createdAt).toLocaleDateString()}`}
+                onMintComplete={handleMintComplete}
                 className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
               >
                 <Coins className="w-5 h-5" />
               </ZoraCoinButton>
               <ShareOnFarcaster
-                videoUrl={video.videoUrl}
+                videoUrl={ipfsUrl}
                 ipfsUrl={ipfsUrl}
                 className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
                 iconOnly={true}
@@ -191,7 +203,7 @@ export function RemixCard({ video, address, chainId }: RemixCardProps) {
             
             <div className="flex-1 p-6 overflow-hidden">
               <video 
-                src={video.videoUrl || ipfsUrl}
+                src={ipfsUrl || video.videoUrl}
                 controls
                 className="w-full h-full object-contain rounded-lg"
                 autoPlay

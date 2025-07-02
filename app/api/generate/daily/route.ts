@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createDailyRemix, getDailyPrompt, getOrUpdateUser } from '../../db';
-import { downloadFile, pinFileToIPFS } from '../../ipfs';
-import { generateAIVideo, getFarcasterProfile } from '../../utils';
+import { createPendingVideo, getDailyPrompt, getOrUpdateUser } from '../../db';
+import { getFarcasterProfile, queueVideoGeneration } from '../../utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,13 +9,12 @@ export async function POST(request: NextRequest) {
 
     if (!walletAddress) {
       return NextResponse.json(
-        { error: 'Custom prompt and wallet address are required' },
+        { error: 'Wallet address is required' },
         { status: 400 }
       );
     }
 
     const dailyPrompt = await getDailyPrompt();
-
     const profile = await getFarcasterProfile(walletAddress);
 
     if (!profile) {
@@ -27,34 +25,38 @@ export async function POST(request: NextRequest) {
     }
 
     const { pfpUrl, farcasterId } = profile;
-
-    const generatedVideoUrl = await generateAIVideo(dailyPrompt.prompt, pfpUrl);
-    const file = await downloadFile(generatedVideoUrl);
-    const videoIpfs = await pinFileToIPFS(file, 'custom-video.mp4');
-
     const user = await getOrUpdateUser({ walletAddress, farcasterId });
 
-    const { remix, video } = await createDailyRemix({
+    // Use shared function to queue video generation
+    const { queueResult } = await queueVideoGeneration({
+      prompt: dailyPrompt.prompt,
+      imageUrl: pfpUrl,
       userId: user.id,
-      promptId: dailyPrompt.id,
-      videoIpfs,
-      videoUrl: generatedVideoUrl,
+      type: 'daily-remix',
+      falRequestId: '', // Will be set by queueVideoGeneration
     });
 
+    // Create pending video entry
+    const pendingVideo = await createPendingVideo({
+      userId: user.id,
+      type: 'daily-remix',
+      falRequestId: queueResult.request_id,
+    });
+
+    console.log('🔵 Daily Remix: Created pending video:', pendingVideo.id);
+
     return NextResponse.json({
-      remixId: remix.id,
-      videoId: video.id,
       success: true,
-      videoUrl: generatedVideoUrl,
-      ipfsUrl: videoIpfs,
-      profileImageUsed: false,
-      type: 'custom-video'
+      pendingVideoId: pendingVideo.id,
+      requestId: queueResult.request_id,
+      type: 'daily-remix',
+      message: 'Video generation queued successfully. Check the Pending tab for updates.'
     });
 
   } catch (error) {
-    console.error('Error in generate-custom-video:', error);
+    console.error('🔴 Daily Remix: Error in generate-daily:', error);
     return NextResponse.json(
-      { error: 'Failed to generate custom video' },
+      { error: 'Failed to queue daily remix generation' },
       { status: 500 }
     );
   }

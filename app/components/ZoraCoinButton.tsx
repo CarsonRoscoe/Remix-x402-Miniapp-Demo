@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cleanAndValidateMetadataURI, createCoinCall, DeployCurrency, ValidMetadataURI } from '@zoralabs/coins-sdk';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { isAddress } from 'viem';
@@ -13,8 +13,11 @@ interface ZoraCoinButtonProps {
   defaultName?: string;
   defaultSymbol?: string;
   defaultDescription?: string;
+  isMinted?: boolean;
+  zoraCoinData?: any;
   onSuccess?: (tx: any) => void;
   onError?: (err: any) => void;
+  onMintComplete?: () => void;
   className?: string;
   children?: React.ReactNode;
 }
@@ -27,8 +30,11 @@ export function ZoraCoinButton({
   defaultName = '',
   defaultSymbol = '',
   defaultDescription = '',
+  isMinted = false,
+  zoraCoinData,
   onSuccess,
   onError,
+  onMintComplete,
   className = '',
   children,
 }: ZoraCoinButtonProps) {
@@ -43,15 +49,19 @@ export function ZoraCoinButton({
   const [metadataUri, setMetadataUri] = useState<string | null>(null);
   const [mintError, setMintError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [localIsMinted, setLocalIsMinted] = useState(isMinted);
 
-  // Wait for transaction receipt when txHash is set
+  useEffect(() => {
+    setLocalIsMinted(isMinted);
+  }, [isMinted]);
+
   const { data: receipt, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
     hash: txHash as `0x${string}` | undefined,
   });
 
-  // Open Zora page when transaction is successful and we have the contract address
   React.useEffect(() => {
     if (isTxSuccess && receipt?.contractAddress) {
+      console.log('isTxSuccess', isTxSuccess);
       const referrer = process.env.NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS || address;
       const zoraUrl = `https://zora.co/coin/base:${receipt.contractAddress}?referrer=${referrer}`;
       window.open(zoraUrl, '_blank');
@@ -59,50 +69,104 @@ export function ZoraCoinButton({
         duration: 3000,
       });
 
-      // Update database with coin metadata if we have a remixId
       if (remixId && metadataUri) {
+        console.log('Updating database with coin data', { remixId, metadataUri, receipt });
         updateDatabaseWithCoinData();
       }
-    }
-  }, [isTxSuccess, receipt?.contractAddress, address, remixId, metadataUri]);
 
-  // Function to update database with coin metadata
+      setLocalIsMinted(true);
+      onMintComplete?.();
+    }
+  }, [isTxSuccess, receipt?.contractAddress, address, remixId, metadataUri, onMintComplete]);
+
   const updateDatabaseWithCoinData = async () => {
-    if (!remixId || !metadataUri || !receipt?.contractAddress) return;
+    console.log('🔵 ZoraCoinButton: updateDatabaseWithCoinData called', {
+      remixId,
+      metadataUri,
+      contractAddress: receipt?.contractAddress,
+      coinName,
+      coinSymbol,
+      address,
+      chainId,
+      coinCurrency,
+      txHash
+    });
+    
+    if (!remixId || !metadataUri || !receipt?.contractAddress) {
+      console.error('🔴 ZoraCoinButton: Missing required data for database update', {
+        remixId: !!remixId,
+        metadataUri: !!metadataUri,
+        contractAddress: !!receipt?.contractAddress
+      });
+      return;
+    }
     
     try {
+      const requestBody = {
+        remixId,
+        name: coinName,
+        symbol: coinSymbol,
+        uri: metadataUri,
+        payoutRecipient: address,
+        chainId: chainId.toString(),
+        currency: coinCurrency,
+        owner: address,
+        txHash: txHash,
+        contractAddress: receipt.contractAddress,
+      };
+      
+      console.log('🔵 ZoraCoinButton: Sending database update request:', requestBody);
+      
       const response = await fetch('/api/zora', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          remixId,
-          name: coinName,
-          symbol: coinSymbol,
-          uri: metadataUri,
-          payoutRecipient: address,
-          chainId: chainId.toString(),
-          currency: coinCurrency,
-          owner: address,
-          txHash: txHash,
-          contractAddress: receipt.contractAddress,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('🔵 ZoraCoinButton: Database update response status:', response.status);
+
       if (!response.ok) {
-        console.error('Failed to update database with coin data');
+        const errorText = await response.text();
+        console.error('🔴 ZoraCoinButton: Failed to update database with coin data:', errorText);
       } else {
-        console.log('Successfully updated database with coin data');
+        const responseData = await response.json();
+        console.log('🔵 ZoraCoinButton: Successfully updated database with coin data:', responseData);
       }
     } catch (error) {
-      console.error('Error updating database with coin data:', error);
+      console.error('🔴 ZoraCoinButton: Error updating database with coin data:', error);
     }
   };
 
-  const isDisabled = !videoIpfs || !address || !chainId;
+  const isDisabled = !videoIpfs || !address || !chainId || localIsMinted;
 
   const openModal = () => {
+    console.log('🔵 ZoraCoinButton: openModal called', { 
+      localIsMinted, 
+      zoraCoinData, 
+      videoIpfs, 
+      address, 
+      chainId 
+    });
+    
+    if (localIsMinted) {
+      console.log('🔵 ZoraCoinButton: Already minted, opening Zora URL');
+      if (zoraCoinData?.contractAddress) {
+        const referrer = process.env.NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS || address;
+        const zoraUrl = `https://zora.co/coin/base:${zoraCoinData.contractAddress}?referrer=${referrer}`;
+        console.log('🔵 ZoraCoinButton: Opening Zora URL:', zoraUrl);
+        window.open(zoraUrl, '_blank');
+      }
+      return;
+    }
+
+    console.log('🔵 ZoraCoinButton: Opening modal with defaults', { 
+      defaultName, 
+      defaultSymbol, 
+      defaultDescription 
+    });
+    
     setCoinName(defaultName);
     setCoinSymbol(defaultSymbol);
     setCoinDescription(defaultDescription);
@@ -114,9 +178,17 @@ export function ZoraCoinButton({
   };
 
   const handlePinAndFetchMetadata = async () => {
+    console.log('🔵 ZoraCoinButton: handlePinAndFetchMetadata called', {
+      coinName,
+      coinDescription,
+      videoIpfs,
+      address
+    });
+    
     setPinningState('pinning');
     setPinError(null);
     setMetadataUri(null);
+    
     try {
       const params = new URLSearchParams({
         name: coinName,
@@ -124,15 +196,29 @@ export function ZoraCoinButton({
         videoIpfs,
         walletAddress: address,
       });
-      const res = await fetch(`/api/zora?${params.toString()}`);
+      
+      const apiUrl = `/api/zora?${params.toString()}`;
+      console.log('🔵 ZoraCoinButton: Calling Zora API:', apiUrl);
+      
+      const res = await fetch(apiUrl);
+      console.log('🔵 ZoraCoinButton: API response status:', res.status);
+      
       if (!res.ok) {
         const err = await res.text();
+        console.error('🔴 ZoraCoinButton: API error response:', err);
         throw new Error(err || 'Failed to create Zora metadata');
       }
-      const { uri } = await res.json();
+      
+      const responseData = await res.json();
+      console.log('🔵 ZoraCoinButton: API response data:', responseData);
+      
+      const { uri } = responseData;
+      console.log('🔵 ZoraCoinButton: Setting metadata URI:', uri);
+      
       setMetadataUri(uri);
       setPinningState('pinned');
     } catch (err: any) {
+      console.error('🔴 ZoraCoinButton: Error in handlePinAndFetchMetadata:', err);
       setPinError(err.message || 'Failed to pin to IPFS');
       setPinningState('error');
     }
@@ -140,14 +226,30 @@ export function ZoraCoinButton({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔵 ZoraCoinButton: handleSubmit called', {
+      coinName,
+      coinSymbol,
+      metadataUri,
+      address,
+      coinCurrency
+    });
+    
     setMintError(null);
-    if (!coinName || !coinSymbol || !metadataUri) return;
-    // Validate address format
+    
+    if (!coinName || !coinSymbol || !metadataUri) {
+      console.error('🔴 ZoraCoinButton: Missing required fields', { coinName, coinSymbol, metadataUri });
+      return;
+    }
+    
     if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+      console.error('🔴 ZoraCoinButton: Invalid payout address:', address);
       setMintError('Invalid payout address');
       return;
     }
+    
     try {
+      console.log('🔵 ZoraCoinButton: Creating coin call parameters...');
+      
       const deployContractParams = await createCoinCall({
         name: coinName,
         symbol: coinSymbol,
@@ -158,31 +260,40 @@ export function ZoraCoinButton({
         chainId: base.id,
         platformReferrer: process.env.NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS as `0x${string}`,
       });
-      console.log('deployContractParams:', deployContractParams);
       
+      console.log('🔵 ZoraCoinButton: Deploy contract params:', deployContractParams);
+      console.log('🔵 ZoraCoinButton: Platform referrer:', process.env.NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS);
+      
+      console.log('🔵 ZoraCoinButton: Calling writeContractAsync...');
       const tx = await writeContractAsync(deployContractParams);
+      console.log('🔵 ZoraCoinButton: Transaction hash received:', tx);
+      
       setTxHash(tx);
       setShowModal(false);
       onSuccess?.(tx);
 
-      // Show success toast
       toast.success(`${coinName} coin minted successfully! 🪙`, {
         duration: 5000,
       });
 
-      // Show transaction submitted toast
       toast.success('Transaction submitted! Check your wallet for confirmation.', {
         duration: 4000,
       });
       
     } catch (err: any) {
+      console.error('🔴 ZoraCoinButton: Error in handleSubmit:', err);
+      console.error('🔴 ZoraCoinButton: Error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
+      
       setMintError(err.message || 'Failed to mint coin');
       onError?.(err);
       toast.error('Failed to mint coin. Please try again.');
     }
   };
 
-  // Helper to get initials for symbol
   function getRemixSymbol(name: string) {
     const words = name.trim().split(/\s+/);
     if (words.length === 1) {
@@ -191,6 +302,17 @@ export function ZoraCoinButton({
     return (
       words.map(w => w[0]).join('') + 'R'
     ).toUpperCase();
+  }
+
+  if (localIsMinted && zoraCoinData?.contractAddress) {
+    return (
+      <button
+        onClick={openModal}
+        className={`py-4 px-6 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-xl transform hover:-translate-y-0.5 ${className}`}
+      >
+        {children || '🪙 View on Zora'}
+      </button>
+    );
   }
 
   return (

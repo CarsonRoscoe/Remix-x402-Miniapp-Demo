@@ -24,6 +24,8 @@ function validateIpfsUri(uri: string): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  console.log('🔵 Zora API: GET request received');
+  
   try {
     const { searchParams } = new URL(request.url);
     
@@ -34,65 +36,94 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || 'social';
     const walletAddress = getAddress(searchParams.get('walletAddress') as string);
 
+    console.log('🔵 Zora API: Request parameters:', {
+      name,
+      description,
+      videoIpfs,
+      imageIpfs,
+      category,
+      walletAddress
+    });
+
     // Validate required fields
+    console.log('🔵 Zora API: Validating required fields...');
     const fieldValidation = validateRequiredFields(name, description, videoIpfs);
     if (!fieldValidation.valid) {
+      console.error('🔴 Zora API: Field validation failed:', fieldValidation.errors);
       return NextResponse.json({ 
         error: 'Missing required fields', 
         details: fieldValidation.errors.join(', ') 
       }, { status: 400 });
     }
+    console.log('🔵 Zora API: Field validation passed');
 
     // Validate IPFS URI format
+    console.log('🔵 Zora API: Validating IPFS URI format...');
     if (!validateIpfsUri(videoIpfs!)) {
+      console.error('🔴 Zora API: Invalid videoIpfs format:', videoIpfs);
       return NextResponse.json({ 
         error: 'Invalid videoIpfs format. Must be a valid IPFS URI starting with ipfs://' 
       }, { status: 400 });
     }
+    console.log('🔵 Zora API: Video IPFS URI validation passed');
 
     if (imageIpfs && !validateIpfsUri(imageIpfs)) {
+      console.error('🔴 Zora API: Invalid imageIpfs format:', imageIpfs);
       return NextResponse.json({ 
         error: 'Invalid imageIpfs format. Must be a valid IPFS URI starting with ipfs://' 
       }, { status: 400 });
+    }
+    if (imageIpfs) {
+      console.log('🔵 Zora API: Image IPFS URI validation passed');
     }
 
     let finalImageIpfs = imageIpfs;
 
     // If no image is provided, use the user's Farcaster profile picture
     if (!finalImageIpfs) {
+      console.log('🔵 Zora API: No image provided, will fetch Farcaster profile picture');
+      
       if (!walletAddress) {
+        console.error('🔴 Zora API: No wallet address provided for Farcaster profile fetch');
         return NextResponse.json({ 
           error: 'walletAddress is required when no imageIpfs is provided to fetch Farcaster profile picture' 
         }, { status: 400 });
       }
 
       try {
-        console.log('No image provided, fetching Farcaster profile picture...');
+        console.log('🔵 Zora API: Fetching Farcaster profile for wallet:', walletAddress);
         
         // Get user's Farcaster profile picture
         const profile = await getFarcasterProfile(walletAddress);
+        console.log('🔵 Zora API: Farcaster profile response:', profile);
         
         if (!profile || !profile.pfpUrl) {
+          console.error('🔴 Zora API: No Farcaster profile picture found');
           return NextResponse.json({ 
             error: 'No Farcaster profile picture found for this wallet address' 
           }, { status: 400 });
         }
 
+        console.log('🔵 Zora API: Downloading profile picture from:', profile.pfpUrl);
         // Download and pin the profile picture to IPFS
         const profileBuffer = await downloadFile(profile.pfpUrl);
-        finalImageIpfs = await pinFileToIPFS(profileBuffer, 'farcaster-profile.jpg');
+        console.log('🔵 Zora API: Profile picture downloaded, size:', profileBuffer.length);
         
-        console.log('Farcaster profile picture pinned to IPFS:', finalImageIpfs);
+        finalImageIpfs = await pinFileToIPFS(profileBuffer, 'farcaster-profile.jpg');
+        console.log('🔵 Zora API: Farcaster profile picture pinned to IPFS:', finalImageIpfs);
       } catch (error) {
-        console.error('Failed to fetch and pin Farcaster profile picture:', error);
+        console.error('🔴 Zora API: Failed to fetch and pin Farcaster profile picture:', error);
         return NextResponse.json({ 
           error: 'Failed to fetch Farcaster profile picture and image is required for Zora metadata',
           details: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 });
       }
+    } else {
+      console.log('🔵 Zora API: Using provided image IPFS:', finalImageIpfs);
     }
 
     // Build Zora-compliant metadata for a video asset
+    console.log('🔵 Zora API: Building metadata object...');
     const metadata: any = {
       name: name!.trim(),
       description: description.trim(),
@@ -107,12 +138,16 @@ export async function GET(request: NextRequest) {
       },
     };
 
+    console.log('🔵 Zora API: Built metadata object:', metadata);
+
     // Validate metadata (throws if invalid)
     try {
+      console.log('🔵 Zora API: Validating metadata with Zora SDK...');
       validateMetadataJSON(metadata);
-      console.log('Metadata validation passed');
+      console.log('🔵 Zora API: Metadata validation passed');
     } catch (err: any) {
-      console.error('Metadata validation failed:', err.message);
+      console.error('🔴 Zora API: Metadata validation failed:', err.message);
+      console.error('🔴 Zora API: Invalid metadata:', metadata);
       return NextResponse.json({ 
         error: 'Metadata validation failed', 
         details: err.message,
@@ -121,17 +156,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Pin metadata to IPFS
+    console.log('🔵 Zora API: Pinning metadata to IPFS...');
     const buffer = Buffer.from(JSON.stringify(metadata, null, 2));
+    console.log('🔵 Zora API: Metadata buffer size:', buffer.length);
+    
     const ipfsUri = await pinFileToIPFS(buffer, 'zora-metadata.json');
+    console.log('🔵 Zora API: Metadata pinned to IPFS:', ipfsUri);
 
-    return NextResponse.json({ 
+    const response = { 
       uri: ipfsUri, 
       metadata,
       success: true 
-    });
+    };
+    
+    console.log('🔵 Zora API: Returning success response:', response);
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Unexpected error in Zora route:', error);
+    console.error('🔴 Zora API: Unexpected error in Zora route:', error);
+    console.error('🔴 Zora API: Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -140,13 +187,30 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('🔵 Zora API: POST request received (database update)');
+  
   try {
-    const { remixId, name, symbol, uri, payoutRecipient, chainId, currency, owner, txHash, contractAddress } = await request.json();
+    const requestBody = await request.json();
+    console.log('🔵 Zora API: POST request body:', requestBody);
+    
+    const { remixId, name, symbol, uri, payoutRecipient, chainId, currency, owner, txHash, contractAddress } = requestBody;
 
     if (!remixId || !name || !symbol || !uri || !payoutRecipient || !chainId || !currency || !owner || !txHash) {
+      console.error('🔴 Zora API: Missing required fields in POST request:', {
+        remixId: !!remixId,
+        name: !!name,
+        symbol: !!symbol,
+        uri: !!uri,
+        payoutRecipient: !!payoutRecipient,
+        chainId: !!chainId,
+        currency: !!currency,
+        owner: !!owner,
+        txHash: !!txHash
+      });
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    console.log('🔵 Zora API: Updating custom remix in database...');
     await updateCustomRemix(remixId, {
         name,
         symbol,
@@ -159,9 +223,14 @@ export async function POST(request: NextRequest) {
         contractAddress
     });
 
+    console.log('🔵 Zora API: Database update successful');
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating remix with Zora coin data:', error);
+    console.error('🔴 Zora API: Error updating remix with Zora coin data:', error);
+    console.error('🔴 Zora API: Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return NextResponse.json({ error: 'Failed to update remix' }, { status: 500 });
   }
 }

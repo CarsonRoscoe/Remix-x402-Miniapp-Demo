@@ -383,3 +383,77 @@ export async function updateNotificationTokensByFid(fid: number, isActive: boole
     },
   });
 }
+
+// Pending Video Functions
+export async function createPendingVideo({
+  userId,
+  type,
+  prompt,
+  falRequestId,
+}: {
+  userId: string;
+  type: string;
+  prompt?: string;
+  falRequestId: string;
+}) {
+  await ensureConnected();
+  
+  return prisma.pendingVideo.create({
+    data: {
+      userId,
+      type,
+      prompt,
+      falRequestId,
+      status: 'pending',
+    },
+  });
+}
+
+export async function updatePendingVideoStatus({
+  id,
+  status,
+  errorMessage,
+}: {
+  id: string;
+  status: string;
+  errorMessage?: string;
+}) {
+  await ensureConnected();
+  
+  const updateData: any = {
+    status,
+    updatedAt: new Date(),
+  };
+  
+  if (status === 'completed') {
+    updateData.completedAt = new Date();
+  }
+  
+  if (errorMessage) {
+    updateData.errorMessage = errorMessage;
+  }
+  
+  return prisma.pendingVideo.update({
+    where: { id },
+    data: updateData,
+  });
+}
+
+export async function getPendingVideos(userId?: string) {
+  await ensureConnected();
+  
+  const whereClause = userId ? { userId } : {};
+  
+  return prisma.pendingVideo.findMany({
+    where: whereClause,
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function deletePendingVideo(id: string) {
+  await ensureConnected();
+  
+  return prisma.pendingVideo.delete({
+    where: { id },
+  });
+}

@@ -29,12 +29,19 @@ export const middleware = paymentMiddleware(
         description: "Custom remix video generation with any picture",
       },
     },
+    "/api/videos/count": {
+      price: "$0.01",
+      network,
+      config: {
+        description: "Get video count from user history",
+      },
+    },
   },
   facilitator,
 );
 
 // Configure which paths the middleware should run on
 export const config = {
-  matcher: ["/api/generate/daily", "/api/generate/custom", "/api/generate/custom-video"],
+  matcher: ["/api/generate/daily", "/api/generate/custom", "/api/generate/custom-video", "/api/videos/count"],
   runtime: "nodejs",
 }; 

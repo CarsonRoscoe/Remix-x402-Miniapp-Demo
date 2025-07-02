@@ -61,6 +61,48 @@ async function uploadImageToFal(imageUrl: string): Promise<string> {
   }
 }
 
+// Shared function to queue video generation
+export async function queueVideoGeneration({
+  prompt,
+  imageUrl,
+  userId,
+  type,
+  falRequestId,
+}: {
+  prompt: string;
+  imageUrl: string;
+  userId: string;
+  type: string;
+  falRequestId: string;
+}) {
+  // Initialize fal serverless client
+  const fal = require('@fal-ai/serverless-client');
+  fal.config({
+    credentials: process.env.FAL_KEY,
+  });
+
+  // Upload the image to fal.ai storage first
+  console.log('Uploading image to fal.ai storage...');
+  const uploadedImageUrl = await uploadImageToFal(imageUrl);
+  console.log('Using uploaded image URL:', uploadedImageUrl);
+
+  // Submit to fal.queue using the correct video generation model
+  const queueResult = await fal.queue.submit("fal-ai/minimax/hailuo-02/standard/image-to-video", {
+    input: {
+      prompt: prompt,
+      image_url: uploadedImageUrl,
+      prompt_optimizer: true,
+    },
+  });
+
+  console.log(`🔵 ${type}: Submitted to fal.queue:`, queueResult);
+
+  return {
+    queueResult,
+    uploadedImageUrl,
+  };
+}
+
 // Function to fetch Farcaster profile picture using our API route
 export async function getFarcasterProfile(walletAddress: string): Promise<{ farcasterId: number, pfpUrl: string } | undefined> {
   try {

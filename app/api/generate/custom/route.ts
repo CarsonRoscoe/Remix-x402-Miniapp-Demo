@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  getFarcasterProfile, 
-  generateAIVideo, 
-} from '../../utils';
-import { downloadFile, pinFileToIPFS } from '../../ipfs';
-import { createCustomRemix, getOrUpdateUser } from '../../db';
+import { createPendingVideo, getOrUpdateUser } from '../../db';
+import { getFarcasterProfile, queueVideoGeneration } from '../../utils';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { prompt, walletAddress } = body; // Custom prompt and wallet address from the request
+    const { prompt, walletAddress } = body;
     
     if (!prompt || !walletAddress) {
       return NextResponse.json(
@@ -18,7 +14,6 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Fetch user's Farcaster profile picture
     const profile = await getFarcasterProfile(walletAddress);
     
     if (!profile) {
@@ -29,34 +24,38 @@ export async function POST(request: NextRequest) {
     }
 
     const { pfpUrl, farcasterId } = profile;
-    
-    // Generate AI video with profile picture
-    const generatedVideoUrl = await generateAIVideo(prompt, pfpUrl);
-    const file = await downloadFile(generatedVideoUrl);
-    const videoIpfs = await pinFileToIPFS(file, 'custom-video.mp4');
-
     const user = await getOrUpdateUser({ walletAddress, farcasterId });
 
-    const { remix, video } = await createCustomRemix({
+    // Use shared function to queue video generation
+    const { queueResult } = await queueVideoGeneration({
+      prompt: prompt,
+      imageUrl: pfpUrl,
       userId: user.id,
-      videoIpfs,
-      videoUrl: generatedVideoUrl,
+      type: 'custom-remix',
+      falRequestId: '', // Will be set by queueVideoGeneration
     });
+
+    // Create pending video entry
+    const pendingVideo = await createPendingVideo({
+      userId: user.id,
+      type: 'custom-remix',
+      prompt: prompt,
+      falRequestId: queueResult.request_id,
+    });
+
+    console.log('🔵 Custom Remix: Created pending video:', pendingVideo.id);
     
     return NextResponse.json({
-      remixId: remix.id,
-      videoId: video.id,
       success: true,
-      videoUrl: generatedVideoUrl,
-      ipfsUrl: videoIpfs,
-      prompt,
-      profileImageUsed: true,
-      type: 'custom-remix'
+      pendingVideoId: pendingVideo.id,
+      requestId: queueResult.request_id,
+      type: 'custom-remix',
+      message: 'Video generation queued successfully. Check the Pending tab for updates.'
     });
   } catch (error) {
-    console.error('Error in generate-custom:', error);
+    console.error('🔴 Custom Remix: Error in generate-custom:', error);
     return NextResponse.json(
-      { error: 'Failed to generate custom remix video' },
+      { error: 'Failed to queue custom remix generation' },
       { status: 500 }
     );
   }

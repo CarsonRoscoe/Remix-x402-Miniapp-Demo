@@ -11,15 +11,17 @@ import { ZoraCoinButton } from './components/ZoraCoinButton';
 import { RemixCard } from './components/RemixCard';
 import { ShareOnFarcaster } from './components/ShareOnFarcaster';
 import { sdk } from '@farcaster/frame-sdk';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import toast from 'react-hot-toast';
 
 type GenerationType = 'daily-remix' | 'custom-remix' | 'custom-video' | null;
 type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
-type TabType = 'home' | 'history';
+type TabType = 'home' | 'history' | 'pending';
 
 interface Video {
   id: string;
   videoIpfs: string;
-  videoUrl?: string; // Original video URL from AI generation
+  videoUrl?: string; // Original video URL from AI generation (temporary, 7 days)
   type: string;
   createdAt: string;
   remix?: {
@@ -45,6 +47,16 @@ interface Video {
   } | null;
 }
 
+// Add new type for pending jobs
+interface PendingVideo {
+  id: string;
+  type: string;
+  prompt?: string;
+  status: string;
+  errorMessage?: string;
+  createdAt: string;
+}
+
 export default function App() {
   const { address, isConnected, connector, chainId } = useAccount();
   const { user: farcasterUser, loading: farcasterLoading } = useFarcaster(address);
@@ -58,6 +70,7 @@ export default function App() {
   const [ipfsUrl, setIpfsUrl] = useState<string | null>(null);
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   const [customImageUrl, setCustomImageUrl] = useState('');
+  const { isFrameReady, setFrameReady } = useMiniKit();
   
   // Data for history tab
   const [videos, setVideos] = useState<Video[]>([]);
@@ -66,6 +79,17 @@ export default function App() {
   // Mini App and notification state
   const [isNotificationEnrolled, setIsNotificationEnrolled] = useState(false);
   const [checkingNotificationStatus, setCheckingNotificationStatus] = useState(false);
+
+  // Pending jobs state
+  const [pendingJobs, setPendingJobs] = useState<PendingVideo[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+
+  // Call setFrameReady() when your app is ready to be shown
+  useEffect(() => {
+    if (!isFrameReady) {
+      setFrameReady();
+    }
+  }, [isFrameReady, setFrameReady]);
 
   // Initialize Farcaster Mini App SDK
   useEffect(() => {
@@ -155,6 +179,63 @@ export default function App() {
       fetchVideos();
     }
   }, [activeTab, isConnected, address, fetchVideos]);
+
+  // Fetch pending jobs for the connected user
+  const fetchPendingJobs = useCallback(async () => {
+    if (!address) return;
+    setLoadingPending(true);
+    try {
+      const response = await fetch(`/api/pending?walletAddress=${address}`);
+      const data = await response.json();
+      if (data.success) {
+        const newPendingJobs = data.pendingVideos;
+        const previousCount = pendingJobs.length;
+        
+        setPendingJobs(newPendingJobs);
+        
+        // If we were on pending tab but no more pending jobs, switch to home
+        if (activeTab === 'pending' && newPendingJobs.length === 0) {
+          setActiveTab('home');
+          // Show notification that all jobs are complete
+          if (previousCount > 0) {
+            toast.success('All video generations are complete! Check your History tab.');
+          }
+        }
+        
+        // If pending jobs decreased, show notification
+        if (newPendingJobs.length < previousCount && previousCount > 0) {
+          const completedCount = previousCount - newPendingJobs.length;
+          toast.success(`${completedCount} video generation${completedCount > 1 ? 's' : ''} completed! Check your History tab.`);
+        }
+      } else {
+        setPendingJobs([]);
+        // If we were on pending tab but no pending jobs, switch to home
+        if (activeTab === 'pending') {
+          setActiveTab('home');
+        }
+      }
+    } catch (error) {
+      setPendingJobs([]);
+      // If we were on pending tab but error occurred, switch to home
+      if (activeTab === 'pending') {
+        setActiveTab('home');
+      }
+    } finally {
+      setLoadingPending(false);
+    }
+  }, [address, activeTab, pendingJobs.length]);
+
+  // Fetch pending jobs when user connects and auto-refresh every 10 seconds
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+    if (isConnected && address) {
+      fetchPendingJobs();
+      interval = setInterval(fetchPendingJobs, 10000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isConnected, address, fetchPendingJobs]);
 
   const handleDailyRemix = async () => {
     if (!isConnected || !address) {
@@ -284,10 +365,25 @@ export default function App() {
       const data = await response.json();
       
       if (data.success) {
-        setGeneratedVideo(data.videoUrl);
-        setIpfsUrl(data.ipfsUrl);
-        setRemixId(data.remixId || null);
-        setGenerationStatus('success');
+        // Check if this was a queued job (async generation)
+        if (data.pendingVideoId && data.message && data.message.includes('queued')) {
+          // This is an async job - show success message and switch to pending tab
+          setGenerationStatus('success');
+          toast.success('Video generation started! Check the Pending tab for updates.');
+          
+          // Fetch pending jobs immediately to show the new job
+          await fetchPendingJobs();
+          setActiveTab('pending');
+          
+          // Reset the generation flow since it's now in the background
+          resetFlow();
+        } else {
+          // This is a sync job (shouldn't happen with current setup, but handle it)
+          setGeneratedVideo(data.videoUrl);
+          setIpfsUrl(data.ipfsUrl);
+          setRemixId(data.remixId || null);
+          setGenerationStatus('success');
+        }
       } else {
         throw new Error('Failed to generate video');
       }
@@ -310,12 +406,24 @@ export default function App() {
     setIpfsUrl(null);
   };
 
+  // Callback to refresh data when minting is complete
+  const handleMintComplete = () => {
+    // Refresh the videos data to show updated minting status
+    if (activeTab === 'history') {
+      fetchVideos();
+    }
+    // For newly generated videos, we could also refresh the current video data
+    // but since it's a new generation, the user will likely create another or go to history
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'home':
         return renderHomeTab();
       case 'history':
         return renderHistoryTab();
+      case 'pending':
+        return renderPendingTab();
       default:
         return renderHomeTab();
     }
@@ -614,9 +722,19 @@ export default function App() {
           <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
             Creating your remix...
           </h3>
-          <p className="text-slate-600 dark:text-slate-300">
-            This may take a few moments
+          <p className="text-slate-600 dark:text-slate-300 mb-4">
+            This typically takes 2-3 minutes
           </p>
+          <div className="max-w-md mx-auto p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+            <div className="flex items-start space-x-3">
+              <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div className="text-sm text-amber-700 dark:text-amber-300">
+                <strong>Please don't leave this page</strong> while your video is being generated.
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -647,6 +765,7 @@ export default function App() {
               address={address as string}
               chainId={chainId as number}
               remixId={remixId || undefined}
+              isMinted={false}
               defaultName={
                 farcasterUser?.displayName
                   ? `${farcasterUser.displayName} PFP Remix`
@@ -668,9 +787,11 @@ export default function App() {
                   ? `${farcasterUser.username} remix on ${getTodayString()}`
                   : `Remix on ${getTodayString()}`
               }
+              onMintComplete={handleMintComplete}
             />
             <ShareOnFarcaster
-              videoUrl={generatedVideo || ''}
+              videoUrl={ipfsUrl ? `https://gateway.pinata.cloud/ipfs/${ipfsUrl.replace('ipfs://', '')}` : ''}
+              ipfsUrl={ipfsUrl ? `https://gateway.pinata.cloud/ipfs/${ipfsUrl.replace('ipfs://', '')}` : ''}
             />
             <button 
               onClick={resetFlow}
@@ -714,7 +835,61 @@ export default function App() {
               video={video} 
               address={address}
               chainId={chainId}
+              onRefresh={fetchVideos}
             />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderPendingTab = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Pending Jobs</h2>
+        <p className="text-slate-600 dark:text-slate-300">
+          These jobs are currently being processed. They will appear in your history when complete.
+        </p>
+      </div>
+      {loadingPending ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-300">Loading your pending jobs...</p>
+        </div>
+      ) : pendingJobs.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-slate-600 dark:text-slate-300">No pending jobs. Submit a new video to see it here!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6">
+          {pendingJobs.map((job) => (
+            <div key={job.id} className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg flex flex-col space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{job.id.slice(0, 8)}...</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(job.createdAt).toLocaleString()}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-semibold text-slate-900 dark:text-white capitalize">{job.type.replace('-', ' ')}</span>
+                <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${
+                  job.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300' :
+                  job.status === 'processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' :
+                  job.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300' :
+                  'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                }`}>
+                  {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                </span>
+              </div>
+              {job.prompt && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  <span className="font-semibold">Prompt:</span> {job.prompt}
+                </div>
+              )}
+              {job.errorMessage && (
+                <div className="text-xs text-red-600 dark:text-red-400">
+                  <span className="font-semibold">Error:</span> {job.errorMessage}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -798,6 +973,18 @@ export default function App() {
           >
             Create
           </button>
+          {pendingJobs.length > 0 && (
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeTab === 'pending'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Pending ({pendingJobs.length})
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('history')}
             className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
