@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { cleanAndValidateMetadataURI, createCoinCall, DeployCurrency, ValidMetadataURI } from '@zoralabs/coins-sdk';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { isAddress } from 'viem';
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import toast from 'react-hot-toast';
 import { base } from 'viem/chains';
 
@@ -59,26 +58,6 @@ export function ZoraCoinButton({
   const { data: receipt, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
     hash: txHash as `0x${string}` | undefined,
   });
-
-  React.useEffect(() => {
-    if (isTxSuccess && receipt?.contractAddress) {
-      console.log('isTxSuccess', isTxSuccess);
-      const referrer = process.env.NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS || address;
-      const zoraUrl = `https://zora.co/coin/base:${receipt.contractAddress}?referrer=${referrer}`;
-      window.open(zoraUrl, '_blank');
-      toast.success('Opening your coin on Zora... 🚀', {
-        duration: 3000,
-      });
-
-      if (remixId && metadataUri) {
-        console.log('Updating database with coin data', { remixId, metadataUri, receipt });
-        updateDatabaseWithCoinData();
-      }
-
-      setLocalIsMinted(true);
-      onMintComplete?.();
-    }
-  }, [isTxSuccess, receipt?.contractAddress, address, remixId, metadataUri, onMintComplete]);
 
   const updateDatabaseWithCoinData = async () => {
     console.log('🔵 ZoraCoinButton: updateDatabaseWithCoinData called', {
@@ -139,6 +118,13 @@ export function ZoraCoinButton({
       console.error('🔴 ZoraCoinButton: Error updating database with coin data:', error);
     }
   };
+
+  useEffect(() => {
+    if (isTxSuccess && receipt?.contractAddress && address && remixId && metadataUri) {
+      updateDatabaseWithCoinData();
+      onMintComplete?.();
+    }
+  }, [receipt, updateDatabaseWithCoinData, isTxSuccess, receipt?.contractAddress, address, remixId, metadataUri, onMintComplete]);
 
   const isDisabled = !videoIpfs || !address || !chainId || localIsMinted;
 
@@ -349,7 +335,7 @@ export function ZoraCoinButton({
                 <div className="text-sm">
                   <div className="font-semibold text-amber-800 dark:text-amber-300 mb-1">Experimental Feature</div>
                   <div className="text-amber-700 dark:text-amber-400">
-                    This automated coin creation is experimental. If it doesn't work, you can manually create your coin on Zora.
+                    This automated coin creation is experimental. If it doesn&apos;t work, you can manually create your coin on Zora.
                   </div>
                   <button
                     type="button"
@@ -386,7 +372,7 @@ export function ZoraCoinButton({
                     💡 Tip: You can use your video IPFS URL: <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">{videoIpfs}</code>
                     {coinName && (
                       <div className="mt-1">
-                        📝 Suggested values: Name: "{coinName}", Symbol: "{coinSymbol}"
+                        📝 Suggested values: Name: &quot;{coinName}&quot;, Symbol: &quot;{coinSymbol}&quot;
                       </div>
                     )}
                   </div>

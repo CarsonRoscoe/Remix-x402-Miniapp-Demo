@@ -1,5 +1,5 @@
 import { wrapFetchWithPayment } from 'x402-fetch';
-import { getServerAccount, getViemAccount } from './signer';
+import { getViemAccount } from './signer';
 
 // Download a file from a URL and return it as a Buffer
 export async function downloadFile(url: string): Promise<Buffer> {

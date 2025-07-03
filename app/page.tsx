@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { getWalletClient } from 'wagmi/actions';
@@ -13,6 +14,7 @@ import { ShareOnFarcaster } from './components/ShareOnFarcaster';
 import { sdk } from '@farcaster/frame-sdk';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 type GenerationType = 'daily-remix' | 'custom-remix' | 'custom-video' | null;
 type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
@@ -715,7 +717,7 @@ export default function App() {
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-8 h-8 text-blue-600">
-                <img src="/remix-logo.png" alt="Remix Logo" className="w-8 h-8" />
+                <Image src="/remix-logo.png" alt="Remix Logo" width={32} height={32} className="w-8 h-8" unoptimized />
               </div>
             </div>
           </div>
@@ -731,7 +733,7 @@ export default function App() {
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
               <div className="text-sm text-amber-700 dark:text-amber-300">
-                <strong>Please don't leave this page</strong> while your video is being generated.
+                <strong>Please don&apos;t leave this page</strong> while your video is being generated.
               </div>
             </div>
           </div>
@@ -905,7 +907,7 @@ export default function App() {
             <div>
               <div className="flex items-center space-x-1">
                 <div className="w-8 h-8 text-blue-600 dark:text-blue-400">
-                  <img src="/remix-logo.png" alt="Remix Logo" className="w-8 h-8" />
+                  <Image src="/remix-logo.png" alt="Remix Logo" width={32} height={32} className="w-8 h-8" unoptimized />
                 </div>
                 <h1 className="text-lg font-bold text-slate-900 dark:text-white">Remix Me</h1>
               </div>
@@ -936,10 +938,12 @@ export default function App() {
               {/* Farcaster User Info */}
               {isConnected && farcasterUser && (
                 <div className="hidden sm:flex items-center space-x-3 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2">
-                  <img 
+                  <Image 
                     src={farcasterUser.pfpUrl} 
                     alt={farcasterUser.displayName}
                     className="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-700"
+                    width={24}
+                    height={24}
                   />
                   <div className="text-xs">
                     <div className="font-medium text-slate-900 dark:text-white truncate max-w-24">

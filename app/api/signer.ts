@@ -17,5 +17,5 @@ export async function getServerAccount() {
 
 export async function getViemAccount() {
     const serverAccount = await getServerAccount();
-    return toAccount<LocalAccount>(serverAccount as any);
+    return toAccount<LocalAccount>(serverAccount as unknown as LocalAccount);
 }
