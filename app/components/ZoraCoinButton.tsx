@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cleanAndValidateMetadataURI, createCoinCall, DeployCurrency, ValidMetadataURI } from '@zoralabs/coins-sdk';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import toast from 'react-hot-toast';
@@ -13,9 +13,9 @@ interface ZoraCoinButtonProps {
   defaultSymbol?: string;
   defaultDescription?: string;
   isMinted?: boolean;
-  zoraCoinData?: any;
-  onSuccess?: (tx: any) => void;
-  onError?: (err: any) => void;
+  zoraCoinData?: { contractAddress?: string };
+  onSuccess?: (tx: unknown) => void;
+  onError?: (err: unknown) => void;
   onMintComplete?: () => void;
   className?: string;
   children?: React.ReactNode;
@@ -59,7 +59,7 @@ export function ZoraCoinButton({
     hash: txHash as `0x${string}` | undefined,
   });
 
-  const updateDatabaseWithCoinData = async () => {
+  const updateDatabaseWithCoinData = useCallback(async () => {
     console.log('🔵 ZoraCoinButton: updateDatabaseWithCoinData called', {
       remixId,
       metadataUri,
@@ -117,7 +117,7 @@ export function ZoraCoinButton({
     } catch (error) {
       console.error('🔴 ZoraCoinButton: Error updating database with coin data:', error);
     }
-  };
+  }, [remixId, metadataUri, receipt?.contractAddress, address, coinName, coinSymbol, chainId, coinCurrency, txHash]);
 
   useEffect(() => {
     if (isTxSuccess && receipt?.contractAddress && address && remixId && metadataUri) {
@@ -205,9 +205,9 @@ export function ZoraCoinButton({
       
       setMetadataUri(uri);
       setPinningState('pinned');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('🔴 ZoraCoinButton: Error in handlePinAndFetchMetadata:', err);
-      setPinError(err.message || 'Failed to pin to IPFS');
+      setPinError((err as Error)?.message || 'Failed to pin to IPFS');
       setPinningState('error');
     }
   };
@@ -268,15 +268,15 @@ export function ZoraCoinButton({
         duration: 4000,
       });
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('🔴 ZoraCoinButton: Error in handleSubmit:', err);
       console.error('🔴 ZoraCoinButton: Error details:', {
-        message: err.message,
-        stack: err.stack,
-        name: err.name
+        message: (err as Error)?.message,
+        stack: (err as Error)?.stack,
+        name: (err as Error)?.name
       });
       
-      setMintError(err.message || 'Failed to mint coin');
+      setMintError((err as Error)?.message || 'Failed to mint coin');
       onError?.(err);
       toast.error('Failed to mint coin. Please try again.');
     }

@@ -70,7 +70,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [remixId, setRemixId] = useState<string | null>(null);
   const [ipfsUrl, setIpfsUrl] = useState<string | null>(null);
-  const [isInMiniApp, setIsInMiniApp] = useState(false);
+
   const [customImageUrl, setCustomImageUrl] = useState('');
   const { isFrameReady, setFrameReady } = useMiniKit();
   
@@ -78,9 +78,7 @@ export default function App() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
 
-  // Mini App and notification state
-  const [isNotificationEnrolled, setIsNotificationEnrolled] = useState(false);
-  const [checkingNotificationStatus, setCheckingNotificationStatus] = useState(false);
+
 
   // Pending jobs state
   const [pendingJobs, setPendingJobs] = useState<PendingVideo[]>([]);
@@ -107,7 +105,6 @@ export default function App() {
 
         const isInMiniApp = await sdk.isInMiniApp();
         console.log('Is in Mini App:', isInMiniApp);
-        setIsInMiniApp(isInMiniApp);
       } catch (error) {
         console.log('Not running in Mini App context or SDK not available:', error);
       }
@@ -116,44 +113,9 @@ export default function App() {
     initMiniApp();
   }, []);
 
-  // Check notification enrollment status when Farcaster user is loaded
-  useEffect(() => {
-    const checkNotificationStatus = async () => {
-      if (!farcasterUser?.fid) return;
-      
-      setCheckingNotificationStatus(true);
-      try {
-        const response = await fetch('/api/notifications/check', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ farcasterId: farcasterUser.fid }),
-        });
-        
-        const data = await response.json();
-        if (data.success) {
-          setIsNotificationEnrolled(data.isEnrolled);
-        }
-      } catch (error) {
-        console.error('Error checking notification status:', error);
-      } finally {
-        setCheckingNotificationStatus(false);
-      }
-    };
 
-    checkNotificationStatus();
-  }, [farcasterUser?.fid]);
 
-  // Function to prompt users to add the Mini App for notifications
-  const handleAddMiniApp = async () => {
-    try {
-      await sdk.actions.addMiniApp();
-      console.log('Mini App add prompt sent');
-    } catch (error) {
-      console.error('Failed to prompt for Mini App addition:', error);
-    }
-  };
+
 
   const fetchVideos = useCallback(async () => {
     if (!address) return;
@@ -216,7 +178,7 @@ export default function App() {
           setActiveTab('home');
         }
       }
-    } catch (error) {
+    } catch {
       setPendingJobs([]);
       // If we were on pending tab but error occurred, switch to home
       if (activeTab === 'pending') {

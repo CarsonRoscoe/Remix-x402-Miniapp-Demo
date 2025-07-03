@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateCustomRemix } from '../db';
 import { pinFileToIPFS, downloadFile } from '../ipfs';
-import { validateMetadataJSON } from '@zoralabs/coins-sdk';
+import { validateMetadataJSON, ValidMetadataJSON } from '@zoralabs/coins-sdk';
 import { getFarcasterProfile } from '../utils';
 import { getAddress } from 'viem';
 
@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
     const description = searchParams.get('description') || '';
     const videoIpfs = searchParams.get('videoIpfs');
     const imageIpfs = searchParams.get('imageIpfs'); // optional
-    const category = searchParams.get('category') || 'social';
     const walletAddress = getAddress(searchParams.get('walletAddress') as string);
 
     console.log('🔵 Zora API: Request parameters:', {
@@ -41,7 +40,6 @@ export async function GET(request: NextRequest) {
       description,
       videoIpfs,
       imageIpfs,
-      category,
       walletAddress
     });
 
@@ -124,17 +122,14 @@ export async function GET(request: NextRequest) {
 
     // Build Zora-compliant metadata for a video asset
     console.log('🔵 Zora API: Building metadata object...');
-    const metadata: any = {
+    const metadata: ValidMetadataJSON = {
       name: name!.trim(),
       description: description.trim(),
       image: finalImageIpfs, // Always include image now
-      animation_url: videoIpfs,
+      animation_url: videoIpfs || undefined,
       content: {
         mime: 'video/mp4',
-        uri: videoIpfs,
-      },
-      properties: {
-        category,
+        uri: videoIpfs!,
       },
     };
 
@@ -145,12 +140,12 @@ export async function GET(request: NextRequest) {
       console.log('🔵 Zora API: Validating metadata with Zora SDK...');
       validateMetadataJSON(metadata);
       console.log('🔵 Zora API: Metadata validation passed');
-    } catch (err: any) {
-      console.error('🔴 Zora API: Metadata validation failed:', err.message);
+    } catch (err: unknown) {
+      console.error('🔴 Zora API: Metadata validation failed:', (err as Error)?.message);
       console.error('🔴 Zora API: Invalid metadata:', metadata);
       return NextResponse.json({ 
         error: 'Metadata validation failed', 
-        details: err.message,
+        details: (err as Error)?.message,
         metadata: metadata // Include the metadata for debugging
       }, { status: 400 });
     }

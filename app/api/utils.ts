@@ -65,15 +65,11 @@ async function uploadImageToFal(imageUrl: string): Promise<string> {
 export async function queueVideoGeneration({
   prompt,
   imageUrl,
-  userId,
   type,
-  falRequestId,
 }: {
   prompt: string;
   imageUrl: string;
-  userId: string;
   type: string;
-  falRequestId: string;
 }) {
   // Initialize fal serverless client
   const fal = require('@fal-ai/serverless-client');
@@ -186,7 +182,7 @@ export async function generateAIVideo(prompt: string, profileImageUrl: string): 
 
   } catch (error) {
     console.error('Error generating AI video:', error);
-    console.error(JSON.stringify((error as any)?.body ?? {}, null, 2));
+    console.error(JSON.stringify((error as { body?: unknown })?.body ?? {}, null, 2));
     // Fallback to placeholder video
     throw new Error('No video generated from image-to-video');
   }

@@ -31,9 +31,7 @@ export async function POST(request: NextRequest) {
     const { queueResult } = await queueVideoGeneration({
       prompt: dailyPrompt.prompt,
       imageUrl: pfpUrl,
-      userId: user.id,
       type: 'daily-remix',
-      falRequestId: '', // Will be set by queueVideoGeneration
     });
 
     // Create pending video entry

@@ -11,7 +11,19 @@ const client = new NeynarAPIClient(config);
 
 // In-memory cache for Farcaster user data
 interface CacheEntry {
-  data: any;
+  data: {
+    fid: number;
+    username: string;
+    displayName: string;
+    pfpUrl: string;
+    followerCount: number;
+    followingCount: number;
+    verifications: {
+      type: string;
+      verified: boolean;
+    }[];
+    custodyAddress: string;
+  };
   timestamp: number;
 }
 
@@ -45,7 +57,7 @@ function getCachedUser(walletAddress: string) {
   return null;
 }
 
-function setCachedUser(walletAddress: string, userData: any) {
+function setCachedUser(walletAddress: string, userData: CacheEntry['data']) {
   userCache.set(walletAddress, {
     data: userData,
     timestamp: Date.now(),

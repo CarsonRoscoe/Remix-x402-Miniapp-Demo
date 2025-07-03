@@ -1,4 +1,4 @@
-import { DailyPrompt, PrismaClient  } from '../generated/prisma';
+import { DailyPrompt, PendingVideo, PrismaClient  } from '../generated/prisma';
 import { getAddress } from 'viem';
 
 // Initialize Prisma client with explicit connection string
@@ -420,7 +420,7 @@ export async function updatePendingVideoStatus({
 }) {
   await ensureConnected();
   
-  const updateData: any = {
+  const updateData: Partial<PendingVideo> = {
     status,
     updatedAt: new Date(),
   };

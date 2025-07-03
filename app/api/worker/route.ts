@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPendingVideos, updatePendingVideoStatus, deletePendingVideo, createDailyRemix, createCustomRemix, createCustomVideo, getOrUpdateUser } from '../db';
+import { NextResponse } from 'next/server';
+import { getPendingVideos, updatePendingVideoStatus, deletePendingVideo, createCustomRemix, createCustomVideo } from '../db';
 import { downloadFile, pinFileToIPFS } from '../ipfs';
-import { getFarcasterProfile } from '../utils';
 
 // Initialize fal
 const fal = require('@fal-ai/serverless-client');
@@ -50,14 +49,14 @@ async function processPendingVideos() {
           console.log(`🔵 Worker: Video pinned to IPFS: ${videoIpfs}`);
           
           // Create the appropriate video/remix based on type
-          let video, remix;
+          let video;
           
           switch (pendingVideo.type) {
             case 'daily-remix':
               // For daily remix, we need to get the daily prompt
               // This is a bit complex, we might need to store promptId in pending video
               // For now, let's create a custom remix
-              ({ video, remix } = await createCustomRemix({
+              ({ video } = await createCustomRemix({
                 userId: pendingVideo.userId,
                 videoIpfs,
                 videoUrl: result.video.url,
@@ -65,7 +64,7 @@ async function processPendingVideos() {
               break;
               
             case 'custom-remix':
-              ({ video, remix } = await createCustomRemix({
+              ({ video } = await createCustomRemix({
                 userId: pendingVideo.userId,
                 videoIpfs,
                 videoUrl: result.video.url,
@@ -146,7 +145,7 @@ async function processPendingVideos() {
   };
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🔵 Worker: GET request received (cron job)');
     const result = await processPendingVideos();
@@ -160,7 +159,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('🔵 Worker: POST request received (manual trigger)');
     const result = await processPendingVideos();
