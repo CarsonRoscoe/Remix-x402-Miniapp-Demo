@@ -18,10 +18,7 @@ interface CacheEntry {
     pfpUrl: string;
     followerCount: number;
     followingCount: number;
-    verifications: {
-      type: string;
-      verified: boolean;
-    }[];
+    verifications: string[];
     custodyAddress: string;
   };
   timestamp: number;
@@ -121,11 +118,11 @@ export async function POST(request: NextRequest) {
     const userData = {
       fid: user.fid,
       username: user.username,
-      displayName: user.display_name,
-      pfpUrl: user.pfp_url,
+      displayName: user.display_name || '',
+      pfpUrl: user.pfp_url || '',
       followerCount: user.follower_count,
       followingCount: user.following_count,
-      verifications: user.verifications,
+      verifications: user.verifications || [],
       custodyAddress: user.custody_address,
     };
 

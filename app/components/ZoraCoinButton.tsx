@@ -13,7 +13,17 @@ interface ZoraCoinButtonProps {
   defaultSymbol?: string;
   defaultDescription?: string;
   isMinted?: boolean;
-  zoraCoinData?: { contractAddress?: string };
+  zoraCoinData?: {
+      name: string;
+      symbol: string;
+      uri: string;
+      payoutRecipient: string;
+      chainId: string;
+      currency: string;
+      owner: string;
+      txHash: string;
+      contractAddress: string;
+  } | null
   onSuccess?: (tx: unknown) => void;
   onError?: (err: unknown) => void;
   onMintComplete?: () => void;
