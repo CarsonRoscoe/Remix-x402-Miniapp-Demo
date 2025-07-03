@@ -154,8 +154,19 @@ export default function App() {
       if (data.success) {
         const newPendingJobs = data.pendingVideos;
         const previousCount = pendingJobs.length;
+        const processingResult = data.processingResult;
         
         setPendingJobs(newPendingJobs);
+        
+        // Show processing results if any videos were processed
+        if (processingResult && (processingResult.processed > 0 || processingResult.errors > 0)) {
+          if (processingResult.processed > 0) {
+            toast.success(`${processingResult.processed} video generation${processingResult.processed > 1 ? 's' : ''} completed! Check your History tab.`);
+          }
+          if (processingResult.errors > 0) {
+            toast.error(`${processingResult.errors} video generation${processingResult.errors > 1 ? 's' : ''} failed. Check the Pending tab for details.`);
+          }
+        }
         
         // If we were on pending tab but no more pending jobs, switch to home
         if (activeTab === 'pending' && newPendingJobs.length === 0) {
@@ -189,12 +200,12 @@ export default function App() {
     }
   }, [address, activeTab, pendingJobs.length]);
 
-  // Fetch pending jobs when user connects and auto-refresh every 10 seconds
+  // Fetch pending jobs when user connects and auto-refresh every 30 seconds
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
     if (isConnected && address) {
       fetchPendingJobs();
-      interval = setInterval(fetchPendingJobs, 10000);
+      interval = setInterval(fetchPendingJobs, 30000);
     }
     return () => {
       if (interval) clearInterval(interval);
