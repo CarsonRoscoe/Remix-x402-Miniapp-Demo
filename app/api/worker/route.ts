@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getPendingVideos, updatePendingVideoStatus, deletePendingVideo, createCustomRemix, createCustomVideo } from '../db';
 import { downloadFile, pinFileToIPFS } from '../ipfs';
 
@@ -145,7 +145,10 @@ async function processPendingVideos() {
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (request.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     console.log('🔵 Worker: GET request received (cron job)');
     const result = await processPendingVideos();
@@ -158,17 +161,3 @@ export async function GET() {
     }, { status: 500 });
   }
 }
-
-export async function POST() {
-  try {
-    console.log('🔵 Worker: POST request received (manual trigger)');
-    const result = await processPendingVideos();
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('🔴 Worker: Unexpected error in POST:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
-  }
-} 
