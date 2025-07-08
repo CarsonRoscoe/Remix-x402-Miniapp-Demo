@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPendingVideos, getUser, updatePendingVideoStatus, deletePendingVideo, createCustomRemix, createCustomVideo } from '../db';
+import { getPendingVideos, getUser, updatePendingVideoStatus, deletePendingVideo, createCustomRemix, createCustomVideo, getDailyPrompt, createDailyRemix } from '../db';
 import { downloadFile, pinFileToIPFS } from '../ipfs';
 import { PendingVideo } from '@/app/generated/prisma';
 
@@ -50,11 +50,11 @@ async function processPendingVideos(pendingVideos: PendingVideo[]) {
             
             switch (pendingVideo.type) {
               case 'daily-remix':
-                // For daily remix, we need to get the daily prompt
-                // This is a bit complex, we might need to store promptId in pending video
-                // For now, let's create a custom remix
-                ({ video } = await createCustomRemix({
+                // For daily remix, get the current daily prompt and create a daily remix
+                const dailyPrompt = await getDailyPrompt();
+                ({ video } = await createDailyRemix({
                   userId: pendingVideo.userId,
+                  promptId: dailyPrompt.id,
                   videoIpfs,
                   videoUrl: result.video.url,
                 }));

@@ -199,7 +199,7 @@ export async function getDailyPrompt(): Promise<DailyPrompt> {
   return prompt;
 }
 
-// Create a new daily prompt for a specific date
+// Create or update a daily prompt for a specific date (search-and-replace approach)
 export async function createNewDailyPrompt({
   date,
   prompt,
@@ -213,17 +213,13 @@ export async function createNewDailyPrompt({
   const normalizedDate = new Date(date);
   normalizedDate.setHours(0, 0, 0, 0);
   
-  // Check if a prompt already exists for this date
-  const existingPrompt = await prisma.dailyPrompt.findUnique({
+  // Use upsert to create or update the prompt for this date
+  return prisma.dailyPrompt.upsert({
     where: { date: normalizedDate },
-  });
-  
-  if (existingPrompt) {
-    throw new Error(`A daily prompt already exists for ${normalizedDate.toISOString().split('T')[0]}`);
-  }
-  
-  return prisma.dailyPrompt.create({
-    data: {
+    update: {
+      prompt,
+    },
+    create: {
       date: normalizedDate,
       prompt,
     },
