@@ -76,4 +76,10 @@ model PendingVideo {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   completedAt   DateTime? // When the video was completed
+  
+  // Payment-related fields for x402 integration
+  paymentPayload Json?   // Stored payment payload from x402
+  paymentRequirements Json? // Stored payment requirements from x402
+  paymentSettled Boolean @default(false) // Whether payment has been settled
+  paymentSettledAt DateTime? // When payment was settled
 }

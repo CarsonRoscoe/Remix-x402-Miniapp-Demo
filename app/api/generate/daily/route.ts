@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPendingVideo, getDailyPrompt, getOrUpdateUser } from '../../db';
-import { getFarcasterProfile, queueVideoGeneration } from '../../utils';
+import { getFarcasterProfile, queueVideoGeneration, PaymentDetails } from '../../utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,11 +34,15 @@ export async function POST(request: NextRequest) {
       type: 'daily-remix',
     });
 
-    // Create pending video entry
+    const paymentDetails = (request as unknown as { paymentDetails: PaymentDetails }).paymentDetails;
+
+    // Create pending video entry with payment details
     const pendingVideo = await createPendingVideo({
       userId: user.id,
       type: 'daily-remix',
       falRequestId: queueResult.request_id,
+      paymentPayload: paymentDetails.paymentPayload,
+      paymentRequirements: paymentDetails.paymentRequirements,
     });
 
     console.log('🔵 Daily Remix: Created pending video:', pendingVideo.id);

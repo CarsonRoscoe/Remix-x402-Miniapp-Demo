@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPendingVideos, getUser, updatePendingVideoStatus, deletePendingVideo, createCustomRemix, createCustomVideo, getDailyPrompt, createDailyRemix } from '../db';
 import { downloadFile, pinFileToIPFS } from '../ipfs';
 import { PendingVideo } from '@/app/generated/prisma';
+import { settleVideoPayment, markPendingVideoPaymentAsSettled } from '../utils';
 
 // Initialize fal
 const fal = require('@fal-ai/serverless-client');
@@ -87,6 +88,23 @@ async function processPendingVideos(pendingVideos: PendingVideo[]) {
               id: pendingVideo.id,
               status: 'completed',
             });
+
+            // Settle payment if payment details exist and payment hasn't been settled yet
+            if (pendingVideo.paymentPayload && pendingVideo.paymentRequirements && !pendingVideo.paymentSettled) {
+              try {
+                const settlementResult = await settleVideoPayment(
+                  pendingVideo.paymentPayload as any,
+                  pendingVideo.paymentRequirements as any
+                );
+                
+                if (settlementResult.success) {
+                  await markPendingVideoPaymentAsSettled(pendingVideo.id);
+                }
+              } catch (error) {
+                // Don't fail the video creation, but log the payment error
+                console.error(`Payment settlement failed for ${pendingVideo.id}:`, error);
+              }
+            }
             
             await deletePendingVideo(pendingVideo.id);
             

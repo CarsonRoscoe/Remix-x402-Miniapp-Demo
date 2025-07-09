@@ -1,4 +1,15 @@
 import { fal } from "@fal-ai/client";
+import { facilitator } from "@coinbase/x402";
+import { useFacilitator } from "x402/verify";
+import { PaymentPayload, PaymentRequirements } from "x402/types";
+import { markPaymentAsSettled } from "./db";
+
+// Type for payment details passed from middleware
+export interface PaymentDetails {
+  paymentPayload: PaymentPayload;
+  paymentRequirements: PaymentRequirements;
+  verification: any;
+}
 
 // Function to download and upload image to fal.ai storage
 async function uploadImageToFal(imageUrl: string): Promise<string> {
@@ -185,5 +196,50 @@ export async function generateAIVideo(prompt: string, profileImageUrl: string): 
     console.error(JSON.stringify((error as { body?: unknown })?.body ?? {}, null, 2));
     // Fallback to placeholder video
     throw new Error('No video generated from image-to-video');
+  }
+}
+
+/**
+ * Settles a payment for a completed video generation
+ * This should be called when a video is successfully processed and approved
+ */
+export async function settleVideoPayment(
+  paymentPayload: PaymentPayload,
+  paymentRequirements: PaymentRequirements
+) {
+  try {
+    const { settle } = useFacilitator(facilitator);
+    const settlement = await settle(paymentPayload, paymentRequirements);
+    
+    if (settlement.success) {
+      return {
+        success: true,
+        transaction: settlement.transaction,
+        network: settlement.network,
+        payer: settlement.payer,
+      };
+    } else {
+      return {
+        success: false,
+        error: 'Settlement failed',
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Marks a pending video's payment as settled in the database
+ */
+export async function markPendingVideoPaymentAsSettled(pendingVideoId: string) {
+  try {
+    await markPaymentAsSettled(pendingVideoId);
+    return true;
+  } catch (error) {
+    return false;
   }
 }

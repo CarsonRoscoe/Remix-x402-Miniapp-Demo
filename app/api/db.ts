@@ -386,11 +386,15 @@ export async function createPendingVideo({
   type,
   prompt,
   falRequestId,
+  paymentPayload,
+  paymentRequirements,
 }: {
   userId: string;
   type: string;
   prompt?: string;
   falRequestId: string;
+  paymentPayload?: any;
+  paymentRequirements?: any;
 }) {
   await ensureConnected();
   
@@ -401,6 +405,8 @@ export async function createPendingVideo({
       prompt,
       falRequestId,
       status: 'pending',
+      paymentPayload,
+      paymentRequirements,
     },
   });
 }
@@ -416,7 +422,7 @@ export async function updatePendingVideoStatus({
 }) {
   await ensureConnected();
   
-  const updateData: Partial<PendingVideo> = {
+  const updateData: any = {
     status,
     updatedAt: new Date(),
   };
@@ -451,5 +457,17 @@ export async function deletePendingVideo(id: string) {
   
   return prisma.pendingVideo.delete({
     where: { id },
+  });
+}
+
+export async function markPaymentAsSettled(id: string) {
+  await ensureConnected();
+  
+  return prisma.pendingVideo.update({
+    where: { id },
+    data: {
+      paymentSettled: true,
+      paymentSettledAt: new Date(),
+    },
   });
 }
