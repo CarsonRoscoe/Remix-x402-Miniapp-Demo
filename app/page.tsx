@@ -6,15 +6,26 @@ import { useAccount } from 'wagmi';
 import { getWalletClient } from 'wagmi/actions';
 import { config } from './viem-config';
 import { wrapFetchWithPayment } from 'x402-fetch';
-import { Wallet } from '@coinbase/onchainkit/wallet';
-import { useFarcaster } from './utils/farcaster';
+import { 
+  Wallet,
+  ConnectWallet,
+  WalletDropdown,
+  WalletDropdownDisconnect 
+} from '@coinbase/onchainkit/wallet';
+import {
+  Name,
+  Identity,
+  Address,
+  Avatar,
+  EthBalance,
+} from '@coinbase/onchainkit/identity';
 import { ZoraCoinButton } from './components/ZoraCoinButton';
 import { RemixCard } from './components/RemixCard';
 import { ShareOnFarcaster } from './components/ShareOnFarcaster';
-import { sdk } from '@farcaster/frame-sdk';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { useFarcaster } from './utils/farcaster';
 
 type GenerationType = 'daily-remix' | 'custom-remix' | 'custom-video' | null;
 type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
@@ -59,9 +70,15 @@ interface PendingVideo {
   createdAt: string;
 }
 
+interface FarcasterUser {
+  displayName: string;
+  username: string;
+  pfpUrl: string;
+}
+
 export default function App() {
   const { address, isConnected, connector, chainId } = useAccount();
-  const { user: farcasterUser, loading: farcasterLoading } = useFarcaster(address);
+  const { context, isFrameReady, setFrameReady } = useMiniKit();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [generationType, setGenerationType] = useState<GenerationType>(null);
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('idle');
@@ -70,15 +87,15 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [remixId, setRemixId] = useState<string | null>(null);
   const [ipfsUrl, setIpfsUrl] = useState<string | null>(null);
-
   const [customImageUrl, setCustomImageUrl] = useState('');
-  const { isFrameReady, setFrameReady } = useMiniKit();
+  const { user: farcasterUser } = useFarcaster(address);
   
+  // Get Farcaster user from context (miniapp frame). If no frame is connected, but wallet collection is connected, try to identify the user via farcaster api
+  const user = (context?.user) || farcasterUser;
+
   // Data for history tab
   const [videos, setVideos] = useState<Video[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
-
-
 
   // Pending jobs state
   const [pendingJobs, setPendingJobs] = useState<PendingVideo[]>([]);
@@ -95,23 +112,18 @@ export default function App() {
   useEffect(() => {
     const initMiniApp = async () => {
       try {
-        // Check if we're running in a Mini App context
-        const context = sdk.context;
-        console.log('Mini App context:', context);
+        if (!context) return;
         
-        // Signal that the Mini App is ready (hides splash screen)
-        await sdk.actions.ready();
+        console.log('Mini App context:', context);
+        await setFrameReady();
         console.log('Mini App ready signal sent');
-
-        const isInMiniApp = await sdk.isInMiniApp();
-        console.log('Is in Mini App:', isInMiniApp);
       } catch (error) {
         console.log('Not running in Mini App context or SDK not available:', error);
       }
     };
 
     initMiniApp();
-  }, []);
+  }, [context, setFrameReady]);
 
 
 
@@ -223,7 +235,7 @@ export default function App() {
       return;
     }
     
-    if (!farcasterUser) {
+    if (!user) {
       setError('No Farcaster account found. Please ensure your wallet is connected to a Farcaster account.');
       return;
     }
@@ -239,7 +251,7 @@ export default function App() {
       return;
     }
     
-    if (!farcasterUser) {
+    if (!user) {
       setError('No Farcaster account found. Please ensure your wallet is connected to a Farcaster account.');
       return;
     }
@@ -274,7 +286,7 @@ export default function App() {
       return;
     }
     
-    if ((generationType === 'daily-remix' || generationType === 'custom-remix') && !farcasterUser) {
+    if ((generationType === 'daily-remix' || generationType === 'custom-remix') && !user) {
       setError('No Farcaster account found. Please ensure your wallet is connected to a Farcaster account.');
       return;
     }
@@ -414,10 +426,10 @@ export default function App() {
       {/* Hero Section */}
       {!(generatedVideo && generationStatus === 'success') && (
         <div className="text-center mb-2">
-          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-md mx-auto mb-4">
+          <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
             Transform your Farcaster profile into amazing videos with AI
           </p>
-          {isConnected && !farcasterUser && !farcasterLoading && (
+          {isConnected && !user && (
             <div className="max-w-md mx-auto mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
               <div className="flex items-center space-x-2">
                 <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -461,10 +473,10 @@ export default function App() {
         <div className="space-y-4">
           <button
             onClick={handleDailyRemix}
-            disabled={!isConnected || !farcasterUser}
-            title={!isConnected ? 'Connect your wallet' : !farcasterUser ? 'Connected account does not have an associated Farcaster account' : ''}
+            disabled={!isConnected || !user}
+            title={!isConnected ? 'Connect your wallet' : !user ? 'Connected account does not have an associated Farcaster account' : ''}
             className={`w-full group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 ${
-              !isConnected || !farcasterUser
+              !isConnected || !user
                 ? 'bg-slate-400 dark:bg-slate-800 cursor-not-allowed opacity-60'
                 : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
             }`}
@@ -488,10 +500,10 @@ export default function App() {
 
           <button
             onClick={handleCustomRemix}
-            disabled={!isConnected || !farcasterUser}
-            title={!isConnected ? 'Connect your wallet' : !farcasterUser ? 'Connected account does not have an associated Farcaster account' : ''}
+            disabled={!isConnected || !user}
+            title={!isConnected ? 'Connect your wallet' : !user ? 'Connected account does not have an associated Farcaster account' : ''}
             className={`w-full group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 ${
-              !isConnected || !farcasterUser
+              !isConnected || !user
                 ? 'bg-slate-400 dark:bg-slate-800 cursor-not-allowed opacity-60'
                 : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
             }`}
@@ -747,24 +759,24 @@ export default function App() {
               remixId={remixId || undefined}
               isMinted={false}
               defaultName={
-                farcasterUser?.displayName
-                  ? `${farcasterUser.displayName} PFP Remix`
-                  : farcasterUser?.username
-                  ? `${farcasterUser.username} PFP Remix`
+                user?.displayName
+                  ? `${user.displayName} PFP Remix`
+                  : user?.username
+                  ? `${user.username} PFP Remix`
                   : 'Remix PFP Coin'
               }
               defaultSymbol={
-                farcasterUser?.displayName
-                  ? getRemixSymbol(farcasterUser.displayName)
-                  : farcasterUser?.username
-                  ? getRemixSymbol(farcasterUser.username)
+                user?.displayName
+                  ? getRemixSymbol(user.displayName)
+                  : user?.username
+                  ? getRemixSymbol(user.username)
                   : 'RMXR'
               }
               defaultDescription={
-                farcasterUser?.displayName
-                  ? `${farcasterUser.displayName} remix on ${getTodayString()}`
-                  : farcasterUser?.username
-                  ? `${farcasterUser.username} remix on ${getTodayString()}`
+                user?.displayName
+                  ? `${user.displayName} remix on ${getTodayString()}`
+                  : user?.username
+                  ? `${user.username} remix on ${getTodayString()}`
                   : `Remix on ${getTodayString()}`
               }
               onMintComplete={handleMintComplete}
@@ -914,21 +926,21 @@ export default function App() {
             
             <div className="flex items-center space-x-3">
               {/* Farcaster User Info */}
-              {isConnected && farcasterUser && (
+              {isConnected && user && (
                 <div className="hidden sm:flex items-center space-x-3 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2">
                   <Image 
-                    src={farcasterUser.pfpUrl} 
-                    alt={farcasterUser.displayName}
+                    src={user.pfpUrl || ''} 
+                    alt={user.displayName || ''}
                     className="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-700"
                     width={24}
                     height={24}
                   />
                   <div className="text-xs">
                     <div className="font-medium text-slate-900 dark:text-white truncate max-w-24">
-                      {farcasterUser.displayName}
+                      {user.displayName}
                     </div>
                     <div className="text-slate-500 dark:text-slate-400">
-                      @{farcasterUser.username}
+                      @{user.username}
                     </div>
                   </div>
                 </div>
