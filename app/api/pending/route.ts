@@ -4,6 +4,7 @@ import { downloadFile, pinFileToIPFS } from '../ipfs';
 import { PendingVideo } from '@/app/generated/prisma';
 import { settleVideoPayment, markPendingVideoPaymentAsSettled } from '../payment-settlement';
 import { PaymentPayload, PaymentRequirements } from 'x402/types';
+import { sendFrameNotification } from "@/lib/notification-client";
 
 // Initialize fal
 const fal = require('@fal-ai/serverless-client');
@@ -189,6 +190,21 @@ async function handleCompletedVideo(pendingVideo: PendingVideo): Promise<{ succe
     });
     
     await deletePendingVideo(pendingVideo.id);
+
+    // Send notification to user
+    try {
+      const user = await getUserById(pendingVideo.userId);
+      if (user?.farcasterId) {
+        await sendFrameNotification({
+          fid: user.farcasterId,
+          title: "Video Ready! 🎬",
+          body: `Your ${pendingVideo.type.replace('-', ' ')} has been generated and is ready to view!`,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send completion notification:', error);
+      // Don't throw - notification failure shouldn't affect video completion
+    }
     
     return { success: true, videoId: video.id };
     
@@ -243,6 +259,7 @@ async function processAllPendingVideos(): Promise<{ processed: number; errors: n
         if (result.videoId) {
           processedCount++;
           details.push(`✅ Created video ${result.videoId} from ${pendingVideo.type}`);
+
         }
       } else {
         errorCount++;
