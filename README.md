@@ -107,6 +107,11 @@ NEXT_PUBLIC_APP_OG_TITLE=AI Image Generator Mini App
 NEXT_PUBLIC_APP_OG_DESCRIPTION=Create, share, and remix AI-generated images on Farcaster
 NEXT_PUBLIC_APP_OG_IMAGE=/og-image.png
 
+# Farcaster Account Association
+FARCASTER_HEADER=your_farcaster_header_here
+FARCASTER_PAYLOAD=your_farcaster_payload_here
+FARCASTER_SIGNATURE=your_farcaster_signature_here
+
 # Payment Configuration
 NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS=your_wallet_address_here
 NEXT_PUBLIC_NETWORK=base-sepolia
@@ -144,6 +149,28 @@ NOTIFICATION_SECRET=your_notification_secret_here
 6. **Network**: Use `base-sepolia` for testing, `base` for production
 7. **CDP Wallet**: Configure through your CDP provider
 8. **Notification Secret**: Generate a secure random string for webhook verification
+
+### Farcaster Account Association
+
+The Farcaster account association variables (`FARCASTER_HEADER`, `FARCASTER_PAYLOAD`, `FARCASTER_SIGNATURE`) are required for proper frame metadata and account linking. To generate these:
+
+1. Run the following command in your project directory:
+```bash
+npx create-onchain --manifest
+```
+
+2. Follow the prompts to:
+   - Enter your domain
+   - Select your Farcaster account
+   - Sign the association message
+
+3. Copy the generated values to your `.env.local` file
+
+These variables enable:
+- Frame discovery in Warpcast
+- Account association for your frame
+- Notification permissions
+- Proper frame metadata display
 
 ### MiniKit App Configuration
 
