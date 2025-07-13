@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUser, getVideos } from '../db';
+import { getUserByAddress, getVideos } from '../db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Look up the user by wallet address
-    const user = await getUser(walletAddress);
+    const user = await getUserByAddress(walletAddress);
     if (!user) {
       return NextResponse.json({ success: true, videos: [] });
     }

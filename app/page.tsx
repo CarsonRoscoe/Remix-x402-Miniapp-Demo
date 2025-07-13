@@ -164,6 +164,11 @@ export default function App() {
             toast.success(`${processingResult.processed} video generation${processingResult.processed > 1 ? 's' : ''} completed! Check your History tab.`);
           }
           if (processingResult.errors > 0) {
+            // Show detailed error information if available
+            const errorDetails = processingResult.details?.filter((d: string) => d.startsWith('❌')) || [];
+            if (errorDetails.length > 0) {
+              console.error('Processing errors:', errorDetails);
+            }
             toast.error(`${processingResult.errors} video generation${processingResult.errors > 1 ? 's' : ''} failed. Check the Pending tab for details.`);
           }
         }

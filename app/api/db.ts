@@ -161,12 +161,19 @@ export async function getVideos(userId: string) {
   });
 }
 
-// Get a user by wallet address
-export async function getUser(walletAddress: string) {
+export async function getUserByAddress(walletAddress: string) {
   await ensureConnected();
   
   return prisma.user.findUnique({
     where: { walletAddress: getAddress(walletAddress) },
+  });
+}
+
+export async function getUserById(id: string) {
+  await ensureConnected();
+  
+  return prisma.user.findUnique({
+    where: { id },
   });
 }
 
@@ -245,7 +252,7 @@ export async function getOrUpdateUser({
 }) {
   await ensureConnected();
   
-  let user = await getUser(walletAddress);
+  let user = await getUserByAddress(walletAddress);
   if (!user) {
     user = await prisma.user.create({
       data: { walletAddress: getAddress(walletAddress), farcasterId },
@@ -444,7 +451,15 @@ export async function updatePendingVideoStatus({
 export async function getPendingVideos(userId?: string) {
   await ensureConnected();
   
-  const whereClause = userId ? { userId } : {};
+  // If userId is provided, include failed status for that user
+  // If no userId, only show pending and processing videos
+  const statusFilter = userId 
+    ? { status: { in: ['pending', 'processing', 'failed'] } }
+    : { status: { in: ['pending', 'processing'] } };
+  
+  const whereClause = userId 
+    ? { AND: [{ userId }, statusFilter] }
+    : statusFilter;
   
   return prisma.pendingVideo.findMany({
     where: whereClause,

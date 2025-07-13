@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPendingVideos, getUser, updatePendingVideoStatus, deletePendingVideo, createCustomRemix, createCustomVideo, getDailyPrompt, createDailyRemix } from '../db';
+import { getPendingVideos, updatePendingVideoStatus, deletePendingVideo, createCustomRemix, createCustomVideo, getDailyPrompt, createDailyRemix, getUserById, getUserByAddress } from '../db';
 import { downloadFile, pinFileToIPFS } from '../ipfs';
 import { PendingVideo } from '@/app/generated/prisma';
-import { settleVideoPayment, markPendingVideoPaymentAsSettled } from '../utils';
+import { settleVideoPayment, markPendingVideoPaymentAsSettled } from '../payment-settlement';
+import { PaymentPayload, PaymentRequirements } from 'x402/types';
 
 // Initialize fal
 const fal = require('@fal-ai/serverless-client');
@@ -10,178 +11,253 @@ fal.config({
   credentials: process.env.FAL_KEY,
 });
 
-async function processPendingVideos(pendingVideos: PendingVideo[]) {
-  console.log('🔵 Pending API: Processing pending videos...');
-  
-  let processedCount = 0;
-  let errorCount = 0;
-  
-  for (const pendingVideo of pendingVideos) {
-    try {
-      console.log(`🔵 Pending API: Processing pending video ${pendingVideo.id} (${pendingVideo.falRequestId})`);
-      
-      // Check status with fal.queue using the correct video generation model
-      const status = await fal.queue.status("fal-ai/minimax/hailuo-02/standard/image-to-video", {
-        requestId: pendingVideo.falRequestId,
-        logs: true,
-      });
-      
-      console.log(`🔵 Pending API: Status for ${pendingVideo.falRequestId}:`, status);
-      
-      if (status.status === 'COMPLETED') {
-        console.log(`🔵 Pending API: Video ${pendingVideo.id} completed, fetching result...`);
-        
-        // Get the result
-        const result = await fal.queue.result("fal-ai/minimax/hailuo-02/standard/image-to-video", {
-          requestId: pendingVideo.falRequestId,
-        });
-        
-        console.log(`🔵 Pending API: Result for ${pendingVideo.id}:`, result);
-        
-        if (result.video && result.video.url) {
-          try {
-            // Download and pin the video to IPFS
-            const videoBuffer = await downloadFile(result.video.url);
-            const videoIpfs = await pinFileToIPFS(videoBuffer, 'generated-video.mp4');
-            
-            console.log(`🔵 Pending API: Video pinned to IPFS: ${videoIpfs}`);
-            
-            // Create the appropriate video/remix based on type
-            let video;
-            
-            switch (pendingVideo.type) {
-              case 'daily-remix':
-                // For daily remix, get the current daily prompt and create a daily remix
-                const dailyPrompt = await getDailyPrompt();
-                ({ video } = await createDailyRemix({
-                  userId: pendingVideo.userId,
-                  promptId: dailyPrompt.id,
-                  videoIpfs,
-                  videoUrl: result.video.url,
-                }));
-                break;
-                
-              case 'custom-remix':
-                ({ video } = await createCustomRemix({
-                  userId: pendingVideo.userId,
-                  videoIpfs,
-                  videoUrl: result.video.url,
-                }));
-                break;
-                
-              case 'custom-video':
-                video = await createCustomVideo({
-                  userId: pendingVideo.userId,
-                  videoIpfs,
-                  videoUrl: result.video.url,
-                });
-                break;
-                
-              default:
-                throw new Error(`Unknown video type: ${pendingVideo.type}`);
-            }
-            
-            console.log(`🔵 Pending API: Created video ${video.id} for pending video ${pendingVideo.id}`);
-            
-            // Mark as completed and delete pending video
-            await updatePendingVideoStatus({
-              id: pendingVideo.id,
-              status: 'completed',
-            });
+// Global processing lock to prevent concurrent processing
+let isProcessing = false;
+let lastProcessingTime = 0;
+const PROCESSING_COOLDOWN = 30000; // 30 seconds
 
-            // Settle payment if payment details exist and payment hasn't been settled yet
-            if (pendingVideo.paymentPayload && pendingVideo.paymentRequirements && !pendingVideo.paymentSettled) {
-              try {
-                const settlementResult = await settleVideoPayment(
-                  pendingVideo.paymentPayload as any,
-                  pendingVideo.paymentRequirements as any
-                );
-                
-                if (settlementResult.success) {
-                  await markPendingVideoPaymentAsSettled(pendingVideo.id);
-                }
-              } catch (error) {
-                // Don't fail the video creation, but log the payment error
-                console.error(`Payment settlement failed for ${pendingVideo.id}:`, error);
-              }
-            }
-            
-            await deletePendingVideo(pendingVideo.id);
-            
-            console.log(`🔵 Pending API: Successfully processed pending video ${pendingVideo.id}`);
-            processedCount++;
-          } catch (processingError) {
-            console.error(`🔴 Pending API: Error processing completed video ${pendingVideo.id}:`, processingError);
-            
-            // Mark as failed but don't throw - let the API call succeed
-            await updatePendingVideoStatus({
-              id: pendingVideo.id,
-              status: 'failed',
-              errorMessage: processingError instanceof Error ? processingError.message : 'Processing failed',
-            });
-            
-            errorCount++;
-          }
-        } else {
-          console.error(`🔴 Pending API: No video in result for ${pendingVideo.id}:`, result);
-          
-          // Mark as failed but don't throw - let the API call succeed
-          await updatePendingVideoStatus({
-            id: pendingVideo.id,
-            status: 'failed',
-            errorMessage: 'No video generated in result',
-          });
+/**
+ * Check if we can process pending videos
+ * Returns true if enough time has passed since last processing
+ */
+function canProcessPendingVideos(): boolean {
+  const now = Date.now();
+  return !isProcessing && (now - lastProcessingTime) >= PROCESSING_COOLDOWN;
+}
 
-          errorCount++;
-        }
+/**
+ * Process a single pending video with comprehensive error handling
+ */
+async function processSinglePendingVideo(pendingVideo: PendingVideo): Promise<{ success: boolean; error?: string; videoId?: string }> {
+  try {
+    // Get user's wallet address from the user record
+    const user = await getUserById(pendingVideo.userId);
+    if (!user) {
+      console.error(`🔴 User not found for userId: ${pendingVideo.userId}`);
+      return { success: false, error: 'User not found' };
+    }
+    
+    console.log(`🔵 Processing ${pendingVideo.type} for wallet ${user.walletAddress}`);
+    
+    // Check status with fal.queue
+    const status = await fal.queue.status("fal-ai/minimax/hailuo-02/standard/image-to-video", {
+      requestId: pendingVideo.falRequestId,
+      logs: true,
+    });
+    
+    // Handle different status states
+    switch (status.status) {
+      case 'COMPLETED':
+        return await handleCompletedVideo(pendingVideo);
         
-      } else if (status.status === 'FAILED' || status.status === 'failed') {
-        console.error(`🔴 Pending API: Video ${pendingVideo.id} failed:`, status);
+      case 'FAILED':
+      case 'failed':
+        const errorMsg = status.error || 'Video generation failed';
+        console.error(`🔴 Failed to generate ${pendingVideo.type} for wallet ${user.walletAddress}: ${errorMsg}`);
         
         await updatePendingVideoStatus({
           id: pendingVideo.id,
           status: 'failed',
-          errorMessage: status.error || 'Unknown error',
+          errorMessage: errorMsg,
         });
+        return { success: false, error: `Video generation failed: ${errorMsg}` };
         
-        errorCount++;
+      case 'PENDING':
+      case 'pending':
+        return { success: true };
         
-      } else if (status.status === 'PENDING' || status.status === 'pending' || 
-                 status.status === 'IN_PROGRESS' || status.status === 'processing') {
-        console.log(`🔵 Pending API: Video ${pendingVideo.id} still ${status.status}`);
-        // Update status to processing if it was pending
-        if (status.status === 'IN_PROGRESS' || status.status === 'processing') {
+      case 'IN_PROGRESS':
+      case 'processing':
+        if (pendingVideo.status !== 'processing') {
           await updatePendingVideoStatus({
             id: pendingVideo.id,
             status: 'processing',
           });
         }
-      }
-      
-    } catch (error) {
-      console.error(`🔴 Pending API: Error processing pending video ${pendingVideo.id}:`, error);
-      
-      // Try to update status but don't let this error break the entire process
-      try {
-        await updatePendingVideoStatus({
-          id: pendingVideo.id,
-          status: 'failed',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        });
-      } catch (updateError) {
-        console.error(`🔴 Pending API: Failed to update status for ${pendingVideo.id}:`, updateError);
-      }
-      
-      errorCount++;
+        return { success: true };
+        
+      default:
+        console.warn(`⚠️ Unknown status for ${pendingVideo.type} (wallet: ${user.walletAddress}): ${status.status}`);
+        return { success: true };
     }
+    
+  } catch (error) {
+    let walletAddress = 'unknown';
+    try {
+      const user = await getUserById(pendingVideo.userId);
+      if (user) {
+        walletAddress = user.walletAddress;
+      }
+    } catch (e) {
+      console.error(`Failed to get user for userId: ${pendingVideo.userId}`);
+    }
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`🔴 Error processing ${pendingVideo.type} for wallet ${walletAddress}: ${errorMessage}`);
+    
+    await updatePendingVideoStatus({
+      id: pendingVideo.id,
+      status: 'failed',
+      errorMessage: errorMessage,
+    });
+    
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Handle a completed video - download, pin to IPFS, create database entries
+ */
+async function handleCompletedVideo(pendingVideo: PendingVideo): Promise<{ success: boolean; error?: string; videoId?: string }> {
+  try {
+    // Get the result
+    const result = await fal.queue.result("fal-ai/minimax/hailuo-02/standard/image-to-video", {
+      requestId: pendingVideo.falRequestId,
+    });
+    
+    if (!result.video?.url) {
+      throw new Error('No video URL in result');
+    }
+    
+    console.log(`🔵 Video completed for ${pendingVideo.id}, downloading and processing...`);
+    
+    // Download and pin the video to IPFS
+    const videoBuffer = await downloadFile(result.video.url);
+    const videoIpfs = await pinFileToIPFS(videoBuffer, 'generated-video.mp4');
+    
+    console.log(`🔵 Video pinned to IPFS: ${videoIpfs}`);
+    
+    // Create the appropriate video/remix based on type
+    let video;
+    
+    switch (pendingVideo.type) {
+      case 'daily-remix':
+        const dailyPrompt = await getDailyPrompt();
+        ({ video } = await createDailyRemix({
+          userId: pendingVideo.userId,
+          promptId: dailyPrompt.id,
+          videoIpfs,
+          videoUrl: result.video.url,
+        }));
+        break;
+        
+      case 'custom-remix':
+        ({ video } = await createCustomRemix({
+          userId: pendingVideo.userId,
+          videoIpfs,
+          videoUrl: result.video.url,
+        }));
+        break;
+        
+      case 'custom-video':
+        video = await createCustomVideo({
+          userId: pendingVideo.userId,
+          videoIpfs,
+          videoUrl: result.video.url,
+        });
+        break;
+        
+      default:
+        throw new Error(`Unknown video type: ${pendingVideo.type}`);
+    }
+    
+    console.log(`✅ Created video ${video.id} for pending video ${pendingVideo.id}`);
+    
+    // Settle payment if needed
+    if (pendingVideo.paymentPayload && pendingVideo.paymentRequirements && !pendingVideo.paymentSettled) {
+      try {
+        const settlementResult = await settleVideoPayment(
+          pendingVideo.paymentPayload as PaymentPayload,
+          pendingVideo.paymentRequirements as PaymentRequirements
+        );
+        
+        if (settlementResult.success) {
+          await markPendingVideoPaymentAsSettled(pendingVideo.id);
+          console.log(`✅ Payment settled for ${pendingVideo.id}`);
+        } else {
+          console.warn(`⚠️ Payment settlement failed for ${pendingVideo.id}: ${settlementResult.error}`);
+        }
+      } catch (error) {
+        console.error(`❌ Payment settlement error for ${pendingVideo.id}:`, error);
+      }
+    }
+    
+    // Mark as completed and delete pending video
+    await updatePendingVideoStatus({
+      id: pendingVideo.id,
+      status: 'completed',
+    });
+    
+    await deletePendingVideo(pendingVideo.id);
+    
+    return { success: true, videoId: video.id };
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`🔴 Error handling completed video ${pendingVideo.id}:`, errorMessage);
+    
+    await updatePendingVideoStatus({
+      id: pendingVideo.id,
+      status: 'failed',
+      errorMessage: errorMessage,
+    });
+    
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Process all pending videos globally
+ */
+async function processAllPendingVideos(): Promise<{ processed: number; errors: number; details: string[] }> {
+  if (!canProcessPendingVideos()) {
+    return { processed: 0, errors: 0, details: ['Processing skipped - cooldown period'] };
   }
   
-  console.log(`🔵 Pending API: Completed processing. Processed: ${processedCount}, Errors: ${errorCount}`);
+  // Set processing lock
+  isProcessing = true;
+  lastProcessingTime = Date.now();
   
-  return {
-    processed: processedCount,
-    errors: errorCount,
-  };
+  try {
+    console.log('🔵 Starting global pending video processing...');
+    
+    // Get ALL pending videos
+    const allPendingVideos = await getPendingVideos();
+    
+    if (allPendingVideos.length === 0) {
+      console.log('🔵 No pending videos to process');
+      return { processed: 0, errors: 0, details: ['No pending videos found'] };
+    }
+    
+    console.log(`🔵 Processing ${allPendingVideos.length} pending videos...`);
+    
+    let processedCount = 0;
+    let errorCount = 0;
+    const details: string[] = [];
+    
+    // Process videos sequentially to avoid overwhelming the system
+    for (const pendingVideo of allPendingVideos) {
+      const result = await processSinglePendingVideo(pendingVideo);
+      
+      if (result.success) {
+        if (result.videoId) {
+          processedCount++;
+          details.push(`✅ Created video ${result.videoId} from ${pendingVideo.type}`);
+        }
+      } else {
+        errorCount++;
+        details.push(`❌ Failed ${pendingVideo.type}: ${result.error}`);
+      }
+    }
+    
+    console.log(`🔵 Processing complete. Processed: ${processedCount}, Errors: ${errorCount}`);
+    
+    return { processed: processedCount, errors: errorCount, details };
+    
+  } finally {
+    // Always release the processing lock
+    isProcessing = false;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -197,34 +273,25 @@ export async function GET(request: NextRequest) {
     }
 
     // Look up the user by wallet address
-    const user = await getUser(walletAddress);
+    const user = await getUserByAddress(walletAddress);
     if (!user) {
-      return NextResponse.json({ success: true, pendingVideos: [] });
+      return NextResponse.json({ success: true, pendingVideos: [], processingResult: null });
     }
 
-    // Get only this user's pending videos
+    // Always attempt to process pending videos (with back-off protection)
+    const processingResult = await processAllPendingVideos();
+
+    // Get this user's pending videos after processing
     const userPendingVideos = await getPendingVideos(user.id);
-
-    // Process any pending videos that are ready
-    let processingResult = { processed: 0, errors: 0 };
-    try {
-      processingResult = await processPendingVideos(userPendingVideos);
-    } catch (processingError) {
-      console.error('🔴 Pending API: Error in processPendingVideos:', processingError);
-      // Don't let processing errors break the API call
-    }
-
-    // Get fresh pending videos after processing
-    const freshPendingVideos = await getPendingVideos(user.id);
 
     return NextResponse.json({
       success: true,
-      pendingVideos: freshPendingVideos,
+      pendingVideos: userPendingVideos,
       processingResult,
     });
 
   } catch (error) {
-    console.error('🔴 Pending API: Error fetching pending videos:', error);
+    console.error('🔴 Pending API: Error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch pending videos' },
       { status: 500 }

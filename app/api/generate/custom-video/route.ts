@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPendingVideo, getOrUpdateUser } from '../../db';
-import { getFarcasterProfile, queueVideoGeneration, PaymentDetails } from '../../utils';
+import { getFarcasterProfile, queueVideoGeneration, getPaymentDetails } from '../../utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
       type: 'custom-video',
     });
 
-    const paymentDetails = (request as unknown as { paymentDetails: PaymentDetails }).paymentDetails;
+    // Get payment details from headers
+    const paymentDetails = getPaymentDetails(request);
 
     // Create pending video entry with payment details
     const pendingVideo = await createPendingVideo({
@@ -55,9 +56,9 @@ export async function POST(request: NextRequest) {
       message: 'Video generation queued successfully. Check the Pending tab for updates.'
     });
   } catch (error) {
-    console.error('🔴 Custom Video: Error in generate-custom-video:', error);
+    console.error('🔴 Custom Video Error:', error);
     return NextResponse.json(
-      { error: 'Failed to queue custom video generation' },
+      { error: error instanceof Error ? error.message : 'Failed to queue custom video generation' },
       { status: 500 }
     );
   }

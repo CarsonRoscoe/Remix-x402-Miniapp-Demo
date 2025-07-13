@@ -1,10 +1,10 @@
 import { createConfig, http } from '@wagmi/core'
-import { base, baseSepolia } from '@wagmi/core/chains'
-import { createClient } from 'viem'
+import { base } from '@wagmi/core/chains'
+import { type Config } from '@wagmi/core'
 
 export const config = createConfig({
-  chains: [base, baseSepolia],
-  client({ chain }) {
-    return createClient({ chain, transport: http() })
-  },
-})
+  chains: [base],
+  transports: {
+    [base.id]: http()
+  }
+}) as Config

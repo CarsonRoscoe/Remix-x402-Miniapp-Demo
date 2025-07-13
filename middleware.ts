@@ -174,15 +174,23 @@ export function asyncPaymentMiddleware(
       );
     }
 
-    // Store payment details in request for later use by the API route
-    (request as any).paymentDetails = {
+    // Store payment details in headers instead of request object
+    const paymentDetails = {
       paymentPayload: decodedPayment,
       paymentRequirements: selectedPaymentRequirements,
       verification,
     };
 
-    // Proceed with request - the API route will handle storing payment details
-    return NextResponse.next();
+    // Create headers with payment details
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-payment-details', JSON.stringify(paymentDetails));
+
+    // Return response with modified headers
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   };
 }
 
@@ -210,19 +218,12 @@ export const middleware = asyncPaymentMiddleware(
         description: "Custom remix video generation with any picture",
       },
     },
-    "/api/videos/count": {
-      price: "$0.01",
-      network,
-      config: {
-        description: "Get video count from user history",
-      },
-    },
   },
   facilitator,
 );
 
 // Configure which paths the middleware should run on
 export const config = {
-  matcher: ["/api/generate/daily", "/api/generate/custom", "/api/generate/custom-video", "/api/videos/count"],
+  matcher: ["/api/generate/daily", "/api/generate/custom", "/api/generate/custom-video"],
   runtime: "nodejs",
 }; 
