@@ -16,6 +16,7 @@ export interface UseFarcasterReturn {
   user: FarcasterUser | null;
   loading: boolean;
   error: string | null;
+  hasAccount: boolean;
   refetch: () => Promise<void>;
 }
 
@@ -24,6 +25,7 @@ export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
   const [user, setUser] = useState<FarcasterUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAccount, setHasAccount] = useState(false);
 
   const fetchUser = useCallback(async () => {
     // If we have a MiniKit context with user info, use that
@@ -39,6 +41,7 @@ export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
         custodyAddress: context.user.location?.description || '',
       });
       setError(null);
+      setHasAccount(true);
       setLoading(false);
       return;
     }
@@ -47,6 +50,7 @@ export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
     if (!walletAddress) {
       setUser(null);
       setError(null);
+      setHasAccount(false);
       return;
     }
 
@@ -65,16 +69,32 @@ export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
 
       const data = await response.json();
 
-      if (data.success && data.user) {
+      if (data.success) {
         setUser(data.user);
+        setHasAccount(data.hasAccount);
         setError(null);
       } else {
         setUser(null);
-        setError(data.error || 'No Farcaster account found');
+        setHasAccount(false);
+        // Handle specific error codes
+        switch (data.code) {
+          case 'WALLET_REQUIRED':
+            setError('Wallet address is required');
+            break;
+          case 'INVALID_ADDRESS':
+            setError('Invalid wallet address format');
+            break;
+          case 'API_ERROR':
+            setError('Failed to connect to Farcaster');
+            break;
+          default:
+            setError(data.error || 'Failed to fetch Farcaster account');
+        }
       }
     } catch (err) {
       setUser(null);
-      setError('Failed to fetch Farcaster account');
+      setHasAccount(false);
+      setError('Failed to connect to Farcaster');
       console.error('Error fetching Farcaster user:', err);
     } finally {
       setLoading(false);
@@ -89,6 +109,7 @@ export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
     user,
     loading,
     error,
+    hasAccount,
     refetch: fetchUser,
   };
 }
