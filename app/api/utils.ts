@@ -165,34 +165,3 @@ export async function generateAIVideo(prompt: string, profileImageUrl: string): 
     throw new Error('No video generated from image-to-video');
   }
 }
-
-// Function to get Farcaster profile from MiniKit context
-export async function getFarcasterProfile(walletAddress: string): Promise<{ farcasterId: number, pfpUrl: string } | undefined> {
-  try {
-    // Get the user's Farcaster ID from the MiniKit API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_ONCHAINKIT_API_URL}/api/v1/user/${walletAddress}`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}`,
-      },
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch Farcaster profile from MiniKit:', response.statusText);
-      return;
-    }
-
-    const data = await response.json();
-    if (!data.user) {
-      console.log('No Farcaster user found for wallet:', walletAddress);
-      return;
-    }
-
-    return {
-      farcasterId: data.user.fid,
-      pfpUrl: data.user.pfp_url || '',
-    };
-  } catch (error) {
-    console.error('Error fetching Farcaster profile from MiniKit:', error);
-    return;
-  }
-}

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { updateCustomRemix } from '../db';
 import { pinFileToIPFS, downloadFile } from '../ipfs';
 import { validateMetadataJSON, ValidMetadataJSON } from '@zoralabs/coins-sdk';
-import { getFarcasterProfile } from '../utils';
 import { getAddress } from 'viem';
 
 // Helper function to validate required fields
@@ -34,6 +33,7 @@ export async function GET(request: NextRequest) {
     const videoIpfs = searchParams.get('videoIpfs');
     const imageIpfs = searchParams.get('imageIpfs'); // optional
     const walletAddress = getAddress(searchParams.get('walletAddress') as string);
+    const pfpUrl = searchParams.get('pfpUrl');
 
     console.log('🔵 Zora API: Request parameters:', {
       name,
@@ -92,19 +92,16 @@ export async function GET(request: NextRequest) {
         console.log('🔵 Zora API: Fetching Farcaster profile for wallet:', walletAddress);
         
         // Get user's Farcaster profile picture
-        const profile = await getFarcasterProfile(walletAddress);
-        console.log('🔵 Zora API: Farcaster profile response:', profile);
-        
-        if (!profile || !profile.pfpUrl) {
+        if (!pfpUrl) {
           console.error('🔴 Zora API: No Farcaster profile picture found');
           return NextResponse.json({ 
             error: 'No Farcaster profile picture found for this wallet address' 
           }, { status: 400 });
         }
 
-        console.log('🔵 Zora API: Downloading profile picture from:', profile.pfpUrl);
+        console.log('🔵 Zora API: Downloading profile picture from:', pfpUrl);
         // Download and pin the profile picture to IPFS
-        const profileBuffer = await downloadFile(profile.pfpUrl);
+        const profileBuffer = await downloadFile(pfpUrl);
         console.log('🔵 Zora API: Profile picture downloaded, size:', profileBuffer.length);
         
         finalImageIpfs = await pinFileToIPFS(profileBuffer, 'farcaster-profile.jpg');

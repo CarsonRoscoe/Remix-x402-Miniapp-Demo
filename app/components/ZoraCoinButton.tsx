@@ -9,6 +9,7 @@ interface ZoraCoinButtonProps {
   address: string;
   chainId: number;
   remixId?: string;
+  pfpUrl?: string;
   defaultName?: string;
   defaultSymbol?: string;
   defaultDescription?: string;
@@ -36,6 +37,7 @@ export function ZoraCoinButton({
   address,
   chainId,
   remixId,
+  pfpUrl,
   defaultName = '',
   defaultSymbol = '',
   defaultDescription = '',
@@ -103,6 +105,7 @@ export function ZoraCoinButton({
         owner: address,
         txHash: txHash,
         contractAddress: receipt.contractAddress,
+        pfpUrl: pfpUrl,
       };
       
       console.log('🔵 ZoraCoinButton: Sending database update request:', requestBody);

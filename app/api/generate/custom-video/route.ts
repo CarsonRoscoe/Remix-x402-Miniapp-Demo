@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPendingVideo, getOrUpdateUser } from '../../db';
-import { getFarcasterProfile, queueVideoGeneration, getPaymentDetails } from '../../utils';
+import { queueVideoGeneration, getPaymentDetails } from '../../utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,17 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const profile = await getFarcasterProfile(walletAddress);
-    
-    if (!profile) {
-      return NextResponse.json(
-        { error: 'No Farcaster profile found. Please ensure your wallet is connected to a Farcaster account.' },
-        { status: 400 }
-      );
-    }
-
-    const { farcasterId } = profile;
-    const user = await getOrUpdateUser({ walletAddress, farcasterId });
+    const user = await getOrUpdateUser({ walletAddress });
 
     // Use shared function to queue video generation
     const { queueResult } = await queueVideoGeneration({

@@ -362,11 +362,11 @@ export default function App() {
       switch (type) {
         case 'daily-remix':
           endpoint = '/api/generate/daily';
-          payload = { walletAddress: address };
+          payload = { walletAddress: address, pfpUrl: user?.pfpUrl, farcasterId: user?.fid };
           break;
         case 'custom-remix':
           endpoint = '/api/generate/custom';
-          payload = { prompt: customPrompt, walletAddress: address };
+          payload = { prompt: customPrompt, walletAddress: address, pfpUrl: user?.pfpUrl, farcasterId: user?.fid };
           break;
         case 'custom-video':
           endpoint = '/api/generate/custom-video';
@@ -793,6 +793,7 @@ export default function App() {
               chainId={chainId as number}
               remixId={remixId || undefined}
               isMinted={false}
+              pfpUrl={user?.pfpUrl}
               defaultName={
                 user?.displayName
                   ? `${user.displayName} PFP Remix`
