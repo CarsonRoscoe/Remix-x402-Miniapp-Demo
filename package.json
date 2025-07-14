@@ -13,6 +13,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@coinbase/cdp-sdk": "^1.25.0",
     "@coinbase/onchainkit": "latest",
     "@coinbase/x402": "latest",
     "@fal-ai/client": "^1.5.0",
