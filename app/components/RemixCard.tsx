@@ -105,7 +105,7 @@ export function RemixCard({ video, address, chainId, onRefresh }: RemixCardProps
         {/* Zora Coin Section */}
         {hasZoraData && video.remix?.zoraCoinData && (
           <div className="mb-4">
-            <div className="flex space-x-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => {
                   if (!video.remix?.zoraCoinData) return;
@@ -113,20 +113,20 @@ export function RemixCard({ video, address, chainId, onRefresh }: RemixCardProps
                   const zoraUrl = `https://zora.co/collect/${video.remix.zoraCoinData.contractAddress}?referrer=${referrer}`;
                   window.open(zoraUrl, '_blank');
                 }}
-                className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                className="w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
               >
                 <Coins className="w-5 h-5" />
               </button>
               <ShareOnFarcaster
                 videoUrl={ipfsUrl}
                 ipfsUrl={ipfsUrl}
-                className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                className="w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
                 iconOnly={true}
               />
               {isDailyRemix && video.remix?.prompt && (
                 <button
                   onClick={() => setShowPromptModal(true)}
-                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                  className="w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
                 >
                   <FileText className="w-5 h-5" />
                 </button>
@@ -138,7 +138,7 @@ export function RemixCard({ video, address, chainId, onRefresh }: RemixCardProps
         {/* Coin Button for Unminted Remixes */}
         {isRemix && !isMinted && address && chainId && (
           <div className="mb-4">
-            <div className="flex space-x-2">
+            <div className="grid grid-cols-3 gap-2">
               <ZoraCoinButton
                 videoIpfs={video.videoIpfs}
                 address={address}
@@ -150,20 +150,20 @@ export function RemixCard({ video, address, chainId, onRefresh }: RemixCardProps
                 defaultSymbol={isDailyRemix ? "DRC" : "CRC"}
                 defaultDescription={`${isDailyRemix ? "Daily" : "Custom"} remix coin created on ${new Date(video.createdAt).toLocaleDateString()}`}
                 onMintComplete={handleMintComplete}
-                className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                className="w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
               >
                 <Coins className="w-5 h-5" />
               </ZoraCoinButton>
               <ShareOnFarcaster
                 videoUrl={ipfsUrl}
                 ipfsUrl={ipfsUrl}
-                className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                className="w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
                 iconOnly={true}
               />
               {isDailyRemix && video.remix?.prompt && (
                 <button
                   onClick={() => setShowPromptModal(true)}
-                  className="flex-1 py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
+                  className="w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center"
                 >
                   <FileText className="w-5 h-5" />
                 </button>

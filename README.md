@@ -134,9 +134,6 @@ DATABASE_URL=your_postgresql_database_url_here
 # Redis Configuration
 REDIS_URL=redis://username:password@host:port
 REDIS_TOKEN=your_redis_token_here
-
-# Notification Configuration
-NOTIFICATION_SECRET=your_notification_secret_here
 ```
 
 ### Getting API Keys

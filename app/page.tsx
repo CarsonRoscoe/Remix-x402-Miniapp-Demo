@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { getWalletClient } from 'wagmi/actions';
 import { config } from './viem-config';
@@ -22,7 +22,7 @@ import {
 import { ZoraCoinButton } from './components/ZoraCoinButton';
 import { RemixCard } from './components/RemixCard';
 import { ShareOnFarcaster } from './components/ShareOnFarcaster';
-import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { useMiniKit, useAddFrame } from '@coinbase/onchainkit/minikit';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { useFarcaster } from './utils/farcaster';
@@ -79,6 +79,8 @@ interface FarcasterUser {
 export default function App() {
   const { address, isConnected, connector, chainId } = useAccount();
   const { context, isFrameReady, setFrameReady } = useMiniKit();
+  const [frameAdded, setFrameAdded] = useState(false);
+  const addFrame = useAddFrame();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [generationType, setGenerationType] = useState<GenerationType>(null);
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('idle');
@@ -125,8 +127,41 @@ export default function App() {
     initMiniApp();
   }, [context, setFrameReady]);
 
+  // Handle adding frame
+  const handleAddFrame = useCallback(async () => {
+    const added = await addFrame();
+    setFrameAdded(Boolean(added));
+    if (added) {
+      toast.success('Frame added successfully!');
+    }
+  }, [addFrame]);
 
+  // Frame save button
+  const saveFrameButton = useMemo(() => {
+    if (context && !context.client.added) {
+      return (
+        <button
+          onClick={handleAddFrame}
+          className="px-4 py-2 text-sm font-medium text-[var(--app-accent)] hover:bg-[var(--app-accent)]/10 rounded-lg transition-colors"
+        >
+          Save Frame
+        </button>
+      );
+    }
 
+    if (frameAdded) {
+      return (
+        <div className="flex items-center space-x-1 text-sm font-medium text-green-500 animate-fade-out">
+          <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          <span>Saved</span>
+        </div>
+      );
+    }
+
+    return null;
+  }, [context, frameAdded, handleAddFrame]);
 
 
   const fetchVideos = useCallback(async () => {
@@ -946,8 +981,11 @@ export default function App() {
                 </div>
               )}
               
-              <div className="flex-shrink-0">
-                <Wallet />
+              <div className="flex items-center space-x-4">
+                {saveFrameButton}
+                <div className="flex-shrink-0">
+                  <Wallet />
+                </div>
               </div>
             </div>
           </div>
@@ -956,10 +994,10 @@ export default function App() {
 
       {/* Tab Navigation */}
       <div className="max-w-4xl mx-auto">
-        <div className="flex space-x-1 bg-slate-100 dark:bg-slate-800 p-1">
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1">
           <button
             onClick={() => setActiveTab('home')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+            className={`flex-1 py-3 text-center text-sm font-medium transition-all duration-200 ${
               activeTab === 'home'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -970,7 +1008,7 @@ export default function App() {
           {pendingJobs.length > 0 && (
             <button
               onClick={() => setActiveTab('pending')}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex-1 py-3 text-center text-sm font-medium transition-all duration-200 ${
                 activeTab === 'pending'
                   ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -981,7 +1019,7 @@ export default function App() {
           )}
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+            className={`flex-1 py-3 text-center text-sm font-medium transition-all duration-200 ${
               activeTab === 'history'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -992,11 +1030,9 @@ export default function App() {
         </div>
       </div>
 
-      <main className="max-w-4xl mx-auto px-2 py-2">
-        <div className="max-w-2xl mx-auto">
-          {renderTabContent()}
-        </div>
-      </main>
+      <div className="max-w-2xl mx-auto px-2 py-2">
+        {renderTabContent()}
+      </div>
     </div>
   );
 }
