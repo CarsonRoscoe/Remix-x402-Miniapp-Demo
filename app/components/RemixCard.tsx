@@ -36,6 +36,7 @@ interface Video {
 
 interface RemixCardProps {
   video: Video;
+  pfpUrl?: string;
   address?: string;
   chainId?: number;
   onRefresh?: () => void;
@@ -69,7 +70,7 @@ const getVideoTitle = (video: Video) => {
   }
 };
 
-export function RemixCard({ video, address, chainId, onRefresh }: RemixCardProps) {
+export function RemixCard({ video, address, chainId, onRefresh, pfpUrl }: RemixCardProps) {
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
 
@@ -145,6 +146,7 @@ export function RemixCard({ video, address, chainId, onRefresh }: RemixCardProps
                 chainId={chainId}
                 remixId={video.remix?.id}
                 isMinted={isMinted}
+                pfpUrl={pfpUrl}
                 zoraCoinData={video.remix?.zoraCoinData}
                 defaultName={isDailyRemix ? "Daily Remix Coin" : "Custom Remix Coin"}
                 defaultSymbol={isDailyRemix ? "DRC" : "CRC"}

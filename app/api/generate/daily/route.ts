@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPendingVideo, getDailyPrompt, getOrUpdateUser } from '../../db';
-import { getFarcasterProfile, queueVideoGeneration, getPaymentDetails } from '../../utils';
+import { queueVideoGeneration, getPaymentDetails } from '../../utils';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { walletAddress } = body;
+    const { walletAddress, pfpUrl, farcasterId } = body;
 
     if (!walletAddress) {
       return NextResponse.json(
@@ -15,16 +15,6 @@ export async function POST(request: NextRequest) {
     }
 
     const dailyPrompt = await getDailyPrompt();
-    const profile = await getFarcasterProfile(walletAddress);
-
-    if (!profile) {
-      return NextResponse.json(
-        { error: 'No Farcaster profile found. Please ensure your wallet is connected to a Farcaster account.' },
-        { status: 400 }
-      );
-    }
-
-    const { pfpUrl, farcasterId } = profile;
     const user = await getOrUpdateUser({ walletAddress, farcasterId });
 
     // Use shared function to queue video generation
