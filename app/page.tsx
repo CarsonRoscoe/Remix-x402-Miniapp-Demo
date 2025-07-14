@@ -142,21 +142,13 @@ export default function App() {
       return (
         <button
           onClick={handleAddFrame}
-          className="px-4 py-2 text-sm font-medium text-[var(--app-accent)] hover:bg-[var(--app-accent)]/10 rounded-lg transition-colors"
+          className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 flex items-center justify-center space-x-2 group transition-all duration-200"
         >
-          Save Frame
-        </button>
-      );
-    }
-
-    if (frameAdded) {
-      return (
-        <div className="flex items-center space-x-1 text-sm font-medium text-green-500 animate-fade-out">
-          <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          <span className="text-sm font-medium">Save this Frame to your Farcaster profile</span>
+          <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
-          <span>Saved</span>
-        </div>
+        </button>
       );
     }
 
@@ -982,8 +974,7 @@ export default function App() {
                 </div>
               )}
               
-              <div className="flex items-center space-x-4">
-                {saveFrameButton}
+              <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <Wallet className="z-10">
                     <ConnectWallet>
@@ -1005,6 +996,9 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* Save Frame Banner */}
+      {saveFrameButton}
 
       {/* Tab Navigation */}
       <div className="max-w-4xl mx-auto">
