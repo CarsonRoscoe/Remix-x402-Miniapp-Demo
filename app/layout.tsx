@@ -7,51 +7,6 @@ import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: 'Remix - AI Video Generation with x402 Payments',
-  description: 'Transform your Farcaster profile into amazing videos with AI. Powered by x402 payments on Base network.',
-  keywords: ['AI', 'video generation', 'Farcaster', 'x402', 'Base network', 'Coinbase Wallet', 'mini app'],
-  authors: [{ name: 'Remix Team' }],
-  
-  // Open Graph metadata for social sharing and embeds
-  openGraph: {
-    title: 'Remix - AI Video Generation',
-    description: 'Transform your Farcaster profile into amazing videos with AI. Powered by x402 payments.',
-    type: 'website',
-    url: 'https://www.remixme.xyz/',
-    siteName: 'Remix',
-    images: [
-      {
-        url: '/remix-logo.png',
-        width: 1200,
-        height: 630,
-        alt: 'Remix - AI Video Generation',
-      },
-    ],
-  },
-  
-  // Twitter Card metadata
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Remix - AI Video Generation',
-    description: 'Transform your Farcaster profile into amazing videos with AI. Powered by x402 payments.',
-    images: ['/remix-logo.png'],
-  },
-  
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Remix',
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
-
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -64,6 +19,72 @@ export const viewport: Viewport = {
   ],
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  const URL = process.env.NEXT_PUBLIC_URL;
+  
+  return {
+    title: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
+    description: process.env.NEXT_PUBLIC_APP_DESCRIPTION,
+    keywords: ['AI', 'video generation', 'Farcaster', 'x402', 'Base network', 'Coinbase Wallet', 'mini app'],
+    authors: [{ name: 'Remix Team' }],
+    
+    openGraph: {
+      title: process.env.NEXT_PUBLIC_APP_OG_TITLE,
+      description: process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION,
+      type: 'website',
+      url: URL,
+      siteName: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
+      images: [
+        {
+          url: process.env.NEXT_PUBLIC_APP_OG_IMAGE || '/remix-logo.png',
+          width: 1200,
+          height: 630,
+          alt: process.env.NEXT_PUBLIC_APP_OG_TITLE,
+        },
+      ],
+    },
+    
+    twitter: {
+      card: 'summary_large_image',
+      title: process.env.NEXT_PUBLIC_APP_OG_TITLE,
+      description: process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION,
+      images: [process.env.NEXT_PUBLIC_APP_OG_IMAGE || '/remix-logo.png'],
+    },
+    
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      title: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
+    },
+    
+    formatDetection: {
+      telephone: false,
+    },
+    
+    robots: {
+      index: false,
+      follow: false,
+    },
+    
+    other: {
+      'fc:frame': JSON.stringify({
+        version: "1",
+        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE,
+        button: {
+          title: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME}`,
+          action: {
+            type: "launch_frame",
+            name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
+            url: URL,
+            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE,
+            splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR,
+          },
+        },
+      }),
+    },
+  };
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -71,32 +92,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <head>
-        {/* Additional meta tags for mini app embedding */}
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Remix" />
-        
-        {/* Prevent zooming and ensure proper scaling in mini apps */}
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        
-        {/* Farcaster Mini App Embed - Required for Mini App discovery */}
-        <meta name="fc:frame" content='{"version":"next","imageUrl":"https://www.remixme.xyz/remix-logo.png","button":{"title":"🎬 Remix","action":{"type":"launch_frame","name":"Remix - AI Video Generator","url":"https://www.remixme.xyz/","splashImageUrl":"https://www.remixme.xyz/remix-logo-200x200.png","splashBackgroundColor":"#3b82f6"}}}' />
-        
-        {/* Favicon and app icons */}
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
-        <link rel="manifest" href="/manifest.json" />
-        
-        {/* Preconnect to external domains for better performance */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://auth.farcaster.xyz" />
-      </head>
-      <body className={`${inter.className} h-full antialiased`}>
+      <body className={`${inter.className} h-full antialiased bg-background`}>
         <Providers>
           {children}
           <Toaster 

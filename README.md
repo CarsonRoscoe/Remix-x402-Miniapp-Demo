@@ -91,36 +91,99 @@ Copy `env.example` to `.env.local` and configure the following variables:
 ### Required Variables
 
 ```bash
-# OnchainKit Configuration
+# MiniKit Configuration
 NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_api_key_here
-NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME=AI Video Generator Mini App
+NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME=AI Image Generator Mini App
+NEXT_PUBLIC_URL=https://your-app-url.com
+NEXT_PUBLIC_APP_SUBTITLE=Create and share AI-generated images
+NEXT_PUBLIC_APP_DESCRIPTION=Generate and share unique AI images directly on Farcaster
+NEXT_PUBLIC_APP_ICON=/icon.png
+NEXT_PUBLIC_APP_SPLASH_IMAGE=/splash.png
+NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR=#000000
+NEXT_PUBLIC_APP_PRIMARY_CATEGORY=Entertainment
+NEXT_PUBLIC_APP_HERO_IMAGE=/hero.png
+NEXT_PUBLIC_APP_TAGLINE=AI Image Generation Made Social
+NEXT_PUBLIC_APP_OG_TITLE=AI Image Generator Mini App
+NEXT_PUBLIC_APP_OG_DESCRIPTION=Create, share, and remix AI-generated images on Farcaster
+NEXT_PUBLIC_APP_OG_IMAGE=/og-image.png
 
-# x402 Payment Configuration
-PUBLIC_RESOURCE_WALLET_ADDRESS=0x0000000000000000000000000000000000000000
-PUBLIC_NETWORK=base-sepolia
+# Farcaster Account Association
+FARCASTER_HEADER=your_farcaster_header_here
+FARCASTER_PAYLOAD=your_farcaster_payload_here
+FARCASTER_SIGNATURE=your_farcaster_signature_here
 
-# Farcaster API Configuration
+# Payment Configuration
+NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS=your_wallet_address_here
+NEXT_PUBLIC_NETWORK=base-sepolia
+
+# CDP Wallet Configuration
+CDP_API_KEY_ID=your_cdp_api_key_id_here
+CDP_API_KEY_SECRET=your_cdp_api_key_secret_here
+CDP_WALLET_SECRET=your_cdp_wallet_secret_here
+
+# Farcaster API Configuration (Web Browser Fallback)
 NEXT_PUBLIC_NEYNAR_API_KEY=your_neynar_api_key_here
 NEYNAR_API_KEY=your_neynar_api_key_here
 
-# FAL AI Configuration
+# AI Model Configuration
 FAL_KEY=your_fal_ai_key_here
 
 # Database Configuration
 DATABASE_URL=your_postgresql_database_url_here
 
-# IPFS Configuration (Pinata)
-PINATA_JWT=your_pinata_jwt_token_here
+# Redis Configuration
+REDIS_URL=redis://username:password@host:port
+REDIS_TOKEN=your_redis_token_here
 ```
 
 ### Getting API Keys
 
 1. **OnchainKit API Key**: Get from [OnchainKit](https://onchainkit.xyz)
-2. **Neynar API Key**: Get from [Neynar](https://neynar.com)
+2. **Neynar API Key**: Get from [Neynar](https://neynar.com) (for web browser fallback)
 3. **FAL AI Key**: Get from [FAL AI](https://fal.ai)
-4. **Pinata JWT**: Get from [Pinata](https://pinata.cloud)
+4. **Redis**: Set up a Redis instance (e.g., on [Upstash](https://upstash.com))
 5. **Resource Wallet Address**: Your wallet address to receive payments
 6. **Network**: Use `base-sepolia` for testing, `base` for production
+7. **CDP Wallet**: Configure through your CDP provider
+8. **Notification Secret**: Generate a secure random string for webhook verification
+
+### Farcaster Account Association
+
+The Farcaster account association variables (`FARCASTER_HEADER`, `FARCASTER_PAYLOAD`, `FARCASTER_SIGNATURE`) are required for proper frame metadata and account linking. To generate these:
+
+1. Run the following command in your project directory:
+```bash
+npx create-onchain --manifest
+```
+
+2. Follow the prompts to:
+   - Enter your domain
+   - Select your Farcaster account
+   - Sign the association message
+
+3. Copy the generated values to your `.env.local` file
+
+These variables enable:
+- Frame discovery in Warpcast
+- Account association for your frame
+- Notification permissions
+- Proper frame metadata display
+
+### MiniKit App Configuration
+
+The MiniKit configuration variables control how your app appears in the Farcaster ecosystem:
+
+- **Project Name**: Your app's name in the MiniKit ecosystem
+- **URL**: Your app's production URL
+- **Subtitle/Description**: Short descriptions for app listings
+- **Icons/Images**: 
+  - App Icon: Square icon for app listings (recommended: 192x192px)
+  - Splash Image: Loading screen image (recommended: 1200x630px)
+  - Hero Image: Featured image for app listings (recommended: 1200x630px)
+  - OG Image: Social sharing preview image (recommended: 1200x630px)
+- **Primary Category**: App store category (e.g., Entertainment, Utility, Social)
+- **Background Color**: Splash screen background color (hex format)
+- **Tagline**: Short, catchy description for marketing
 
 ## Usage
 

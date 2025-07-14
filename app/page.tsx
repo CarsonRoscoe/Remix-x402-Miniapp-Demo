@@ -1,20 +1,31 @@
 'use client';
 
 import React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { getWalletClient } from 'wagmi/actions';
 import { config } from './viem-config';
 import { wrapFetchWithPayment } from 'x402-fetch';
-import { Wallet } from '@coinbase/onchainkit/wallet';
-import { useFarcaster } from './utils/farcaster';
+import { 
+  Wallet,
+  ConnectWallet,
+  WalletDropdown,
+  WalletDropdownDisconnect 
+} from '@coinbase/onchainkit/wallet';
+import {
+  Name,
+  Identity,
+  Address,
+  Avatar,
+  EthBalance,
+} from '@coinbase/onchainkit/identity';
 import { ZoraCoinButton } from './components/ZoraCoinButton';
 import { RemixCard } from './components/RemixCard';
 import { ShareOnFarcaster } from './components/ShareOnFarcaster';
-import { sdk } from '@farcaster/frame-sdk';
-import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { useMiniKit, useAddFrame } from '@coinbase/onchainkit/minikit';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { useFarcaster } from './utils/farcaster';
 
 type GenerationType = 'daily-remix' | 'custom-remix' | 'custom-video' | null;
 type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
@@ -59,9 +70,17 @@ interface PendingVideo {
   createdAt: string;
 }
 
+interface FarcasterUser {
+  displayName: string;
+  username: string;
+  pfpUrl: string;
+}
+
 export default function App() {
   const { address, isConnected, connector, chainId } = useAccount();
-  const { user: farcasterUser, loading: farcasterLoading } = useFarcaster(address);
+  const { context, isFrameReady, setFrameReady } = useMiniKit();
+  const [frameAdded, setFrameAdded] = useState(false);
+  const addFrame = useAddFrame();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [generationType, setGenerationType] = useState<GenerationType>(null);
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('idle');
@@ -70,15 +89,15 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [remixId, setRemixId] = useState<string | null>(null);
   const [ipfsUrl, setIpfsUrl] = useState<string | null>(null);
-
   const [customImageUrl, setCustomImageUrl] = useState('');
-  const { isFrameReady, setFrameReady } = useMiniKit();
+  const { user: farcasterUser } = useFarcaster(address);
   
+  // Get Farcaster user from context (miniapp frame). If no frame is connected, but wallet collection is connected, try to identify the user via farcaster api
+  const user = (context?.user) || farcasterUser;
+
   // Data for history tab
   const [videos, setVideos] = useState<Video[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
-
-
 
   // Pending jobs state
   const [pendingJobs, setPendingJobs] = useState<PendingVideo[]>([]);
@@ -95,26 +114,54 @@ export default function App() {
   useEffect(() => {
     const initMiniApp = async () => {
       try {
-        // Check if we're running in a Mini App context
-        const context = sdk.context;
-        console.log('Mini App context:', context);
+        if (!context) return;
         
-        // Signal that the Mini App is ready (hides splash screen)
-        await sdk.actions.ready();
+        console.log('Mini App context:', context);
+        await setFrameReady();
         console.log('Mini App ready signal sent');
-
-        const isInMiniApp = await sdk.isInMiniApp();
-        console.log('Is in Mini App:', isInMiniApp);
       } catch (error) {
         console.log('Not running in Mini App context or SDK not available:', error);
       }
     };
 
     initMiniApp();
-  }, []);
+  }, [context, setFrameReady]);
 
+  // Handle adding frame
+  const handleAddFrame = useCallback(async () => {
+    const added = await addFrame();
+    setFrameAdded(Boolean(added));
+    if (added) {
+      toast.success('Frame added successfully!');
+    }
+  }, [addFrame]);
 
+  // Frame save button
+  const saveFrameButton = useMemo(() => {
+    if (context && !context.client.added) {
+      return (
+        <button
+          onClick={handleAddFrame}
+          className="px-4 py-2 text-sm font-medium text-[var(--app-accent)] hover:bg-[var(--app-accent)]/10 rounded-lg transition-colors"
+        >
+          Save Frame
+        </button>
+      );
+    }
 
+    if (frameAdded) {
+      return (
+        <div className="flex items-center space-x-1 text-sm font-medium text-green-500 animate-fade-out">
+          <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          <span>Saved</span>
+        </div>
+      );
+    }
+
+    return null;
+  }, [context, frameAdded, handleAddFrame]);
 
 
   const fetchVideos = useCallback(async () => {
@@ -223,7 +270,7 @@ export default function App() {
       return;
     }
     
-    if (!farcasterUser) {
+    if (!user) {
       setError('No Farcaster account found. Please ensure your wallet is connected to a Farcaster account.');
       return;
     }
@@ -239,7 +286,7 @@ export default function App() {
       return;
     }
     
-    if (!farcasterUser) {
+    if (!user) {
       setError('No Farcaster account found. Please ensure your wallet is connected to a Farcaster account.');
       return;
     }
@@ -274,7 +321,7 @@ export default function App() {
       return;
     }
     
-    if ((generationType === 'daily-remix' || generationType === 'custom-remix') && !farcasterUser) {
+    if ((generationType === 'daily-remix' || generationType === 'custom-remix') && !user) {
       setError('No Farcaster account found. Please ensure your wallet is connected to a Farcaster account.');
       return;
     }
@@ -414,10 +461,10 @@ export default function App() {
       {/* Hero Section */}
       {!(generatedVideo && generationStatus === 'success') && (
         <div className="text-center mb-2">
-          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-md mx-auto mb-4">
+          <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">
             Transform your Farcaster profile into amazing videos with AI
           </p>
-          {isConnected && !farcasterUser && !farcasterLoading && (
+          {isConnected && !user && (
             <div className="max-w-md mx-auto mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300">
               <div className="flex items-center space-x-2">
                 <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -461,10 +508,10 @@ export default function App() {
         <div className="space-y-4">
           <button
             onClick={handleDailyRemix}
-            disabled={!isConnected || !farcasterUser}
-            title={!isConnected ? 'Connect your wallet' : !farcasterUser ? 'Connected account does not have an associated Farcaster account' : ''}
+            disabled={!isConnected || !user}
+            title={!isConnected ? 'Connect your wallet' : !user ? 'Connected account does not have an associated Farcaster account' : ''}
             className={`w-full group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 ${
-              !isConnected || !farcasterUser
+              !isConnected || !user
                 ? 'bg-slate-400 dark:bg-slate-800 cursor-not-allowed opacity-60'
                 : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
             }`}
@@ -488,10 +535,10 @@ export default function App() {
 
           <button
             onClick={handleCustomRemix}
-            disabled={!isConnected || !farcasterUser}
-            title={!isConnected ? 'Connect your wallet' : !farcasterUser ? 'Connected account does not have an associated Farcaster account' : ''}
+            disabled={!isConnected || !user}
+            title={!isConnected ? 'Connect your wallet' : !user ? 'Connected account does not have an associated Farcaster account' : ''}
             className={`w-full group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 ${
-              !isConnected || !farcasterUser
+              !isConnected || !user
                 ? 'bg-slate-400 dark:bg-slate-800 cursor-not-allowed opacity-60'
                 : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg hover:shadow-xl transform hover:-translate-y-1'
             }`}
@@ -747,24 +794,24 @@ export default function App() {
               remixId={remixId || undefined}
               isMinted={false}
               defaultName={
-                farcasterUser?.displayName
-                  ? `${farcasterUser.displayName} PFP Remix`
-                  : farcasterUser?.username
-                  ? `${farcasterUser.username} PFP Remix`
+                user?.displayName
+                  ? `${user.displayName} PFP Remix`
+                  : user?.username
+                  ? `${user.username} PFP Remix`
                   : 'Remix PFP Coin'
               }
               defaultSymbol={
-                farcasterUser?.displayName
-                  ? getRemixSymbol(farcasterUser.displayName)
-                  : farcasterUser?.username
-                  ? getRemixSymbol(farcasterUser.username)
+                user?.displayName
+                  ? getRemixSymbol(user.displayName)
+                  : user?.username
+                  ? getRemixSymbol(user.username)
                   : 'RMXR'
               }
               defaultDescription={
-                farcasterUser?.displayName
-                  ? `${farcasterUser.displayName} remix on ${getTodayString()}`
-                  : farcasterUser?.username
-                  ? `${farcasterUser.username} remix on ${getTodayString()}`
+                user?.displayName
+                  ? `${user.displayName} remix on ${getTodayString()}`
+                  : user?.username
+                  ? `${user.username} remix on ${getTodayString()}`
                   : `Remix on ${getTodayString()}`
               }
               onMintComplete={handleMintComplete}
@@ -914,28 +961,44 @@ export default function App() {
             
             <div className="flex items-center space-x-3">
               {/* Farcaster User Info */}
-              {isConnected && farcasterUser && (
+              {isConnected && user && (
                 <div className="hidden sm:flex items-center space-x-3 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2">
                   <Image 
-                    src={farcasterUser.pfpUrl} 
-                    alt={farcasterUser.displayName}
+                    src={user.pfpUrl || ''} 
+                    alt={user.displayName || ''}
                     className="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-700"
                     width={24}
                     height={24}
                   />
                   <div className="text-xs">
                     <div className="font-medium text-slate-900 dark:text-white truncate max-w-24">
-                      {farcasterUser.displayName}
+                      {user.displayName}
                     </div>
                     <div className="text-slate-500 dark:text-slate-400">
-                      @{farcasterUser.username}
+                      @{user.username}
                     </div>
                   </div>
                 </div>
               )}
               
-              <div className="flex-shrink-0">
-                <Wallet />
+              <div className="flex items-center space-x-4">
+                {saveFrameButton}
+                <div className="flex-shrink-0">
+                  <Wallet className="z-10">
+                    <ConnectWallet>
+                      <Name className="text-inherit" />
+                    </ConnectWallet>
+                    <WalletDropdown>
+                      <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                        <Avatar />
+                        <Name />
+                        <Address />
+                        <EthBalance />
+                      </Identity>
+                      <WalletDropdownDisconnect />
+                    </WalletDropdown>
+                  </Wallet>
+                </div>
               </div>
             </div>
           </div>
@@ -944,10 +1007,10 @@ export default function App() {
 
       {/* Tab Navigation */}
       <div className="max-w-4xl mx-auto">
-        <div className="flex space-x-1 bg-slate-100 dark:bg-slate-800 p-1">
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1">
           <button
             onClick={() => setActiveTab('home')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+            className={`flex-1 py-3 text-center text-sm font-medium transition-all duration-200 ${
               activeTab === 'home'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -958,7 +1021,7 @@ export default function App() {
           {pendingJobs.length > 0 && (
             <button
               onClick={() => setActiveTab('pending')}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex-1 py-3 text-center text-sm font-medium transition-all duration-200 ${
                 activeTab === 'pending'
                   ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -969,7 +1032,7 @@ export default function App() {
           )}
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+            className={`flex-1 py-3 text-center text-sm font-medium transition-all duration-200 ${
               activeTab === 'history'
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -980,11 +1043,9 @@ export default function App() {
         </div>
       </div>
 
-      <main className="max-w-4xl mx-auto px-2 py-2">
-        <div className="max-w-2xl mx-auto">
-          {renderTabContent()}
-        </div>
-      </main>
+      <div className="max-w-2xl mx-auto px-2 py-2">
+        {renderTabContent()}
+      </div>
     </div>
   );
 }

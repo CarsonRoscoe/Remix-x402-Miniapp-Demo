@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 
 export interface FarcasterUser {
   fid: number;
@@ -15,21 +16,45 @@ export interface UseFarcasterReturn {
   user: FarcasterUser | null;
   loading: boolean;
   error: string | null;
+  hasAccount: boolean;
   refetch: () => Promise<void>;
 }
 
 export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
+  const { context } = useMiniKit();
   const [user, setUser] = useState<FarcasterUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAccount, setHasAccount] = useState(false);
 
   const fetchUser = useCallback(async () => {
-    if (!walletAddress) {
-      setUser(null);
+    // If we have a MiniKit context with user info, use that
+    if (context?.user) {
+      setUser({
+        fid: context.user.fid,
+        username: context.user.username || '',
+        displayName: context.user.displayName || context.user.username || '',
+        pfpUrl: context.user.pfpUrl || '',
+        followerCount: 0, // Not available in context
+        followingCount: 0, // Not available in context
+        verifications: [], // Not available in context
+        custodyAddress: context.user.location?.description || '',
+      });
       setError(null);
+      setHasAccount(true);
+      setLoading(false);
       return;
     }
 
+    // If no wallet address and no context, reset state
+    if (!walletAddress) {
+      setUser(null);
+      setError(null);
+      setHasAccount(false);
+      return;
+    }
+
+    // Fall back to Neynar API
     setLoading(true);
     setError(null);
 
@@ -44,21 +69,37 @@ export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
 
       const data = await response.json();
 
-      if (data.success && data.user) {
+      if (data.success) {
         setUser(data.user);
+        setHasAccount(data.hasAccount);
         setError(null);
       } else {
         setUser(null);
-        setError(data.error || 'No Farcaster account found');
+        setHasAccount(false);
+        // Handle specific error codes
+        switch (data.code) {
+          case 'WALLET_REQUIRED':
+            setError('Wallet address is required');
+            break;
+          case 'INVALID_ADDRESS':
+            setError('Invalid wallet address format');
+            break;
+          case 'API_ERROR':
+            setError('Failed to connect to Farcaster');
+            break;
+          default:
+            setError(data.error || 'Failed to fetch Farcaster account');
+        }
       }
     } catch (err) {
       setUser(null);
-      setError('Failed to fetch Farcaster account');
+      setHasAccount(false);
+      setError('Failed to connect to Farcaster');
       console.error('Error fetching Farcaster user:', err);
     } finally {
       setLoading(false);
     }
-  }, [walletAddress]);
+  }, [walletAddress, context?.user]);
 
   useEffect(() => {
     fetchUser();
@@ -68,93 +109,7 @@ export function useFarcaster(walletAddress?: string): UseFarcasterReturn {
     user,
     loading,
     error,
+    hasAccount,
     refetch: fetchUser,
   };
 }
-
-// Function to get Farcaster ID from wallet address
-export async function getFarcasterId(walletAddress: string): Promise<string | null> {
-  try {
-    const response = await fetch('/api/farcaster/user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ walletAddress }),
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch Farcaster user:', response.statusText);
-      return null;
-    }
-
-    const data = await response.json();
-    
-    if (data.success && data.user?.fid) {
-      return data.user.fid.toString();
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error fetching Farcaster ID:', error);
-    return null;
-  }
-}
-
-// Function to get Farcaster profile picture
-export async function getFarcasterProfilePicture(walletAddress: string): Promise<string | null> {
-  try {
-    const response = await fetch('/api/farcaster/user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ walletAddress }),
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch Farcaster user:', response.statusText);
-      return null;
-    }
-
-    const data = await response.json();
-    
-    if (data.success && data.user?.pfpUrl) {
-      return data.user.pfpUrl;
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error fetching Farcaster profile:', error);
-    return null;
-  }
-}
-
-// Function to get complete Farcaster user data
-export async function getFarcasterUser(walletAddress: string) {
-  try {
-    const response = await fetch('/api/farcaster/user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ walletAddress }),
-    });
-
-    if (!response.ok) {
-      console.error('Failed to fetch Farcaster user:', response.statusText);
-      return null;
-    }
-
-    const data = await response.json();
-    
-    if (data.success) {
-      return data.user;
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error fetching Farcaster user:', error);
-    return null;
-  }
-} 

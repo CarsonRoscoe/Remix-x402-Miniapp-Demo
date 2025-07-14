@@ -20,7 +20,7 @@ interface CacheEntry {
     followingCount: number;
     verifications: string[];
     custodyAddress: string;
-  };
+  } | null;  // Allow null for "no account" cache
   timestamp: number;
 }
 
@@ -29,6 +29,7 @@ const userCache = new Map<string, CacheEntry>();
 // Cache configuration
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 const CACHE_CLEANUP_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const NO_ACCOUNT_CACHE_TTL = 1 * 60 * 1000; // 1 minute for "no account" results
 
 // Cleanup old cache entries periodically
 let lastCleanup = Date.now();
@@ -37,7 +38,8 @@ function cleanupCache() {
   const now = Date.now();
   if (now - lastCleanup > CACHE_CLEANUP_INTERVAL) {
     for (const [key, entry] of userCache.entries()) {
-      if (now - entry.timestamp > CACHE_TTL) {
+      const ttl = entry.data === null ? NO_ACCOUNT_CACHE_TTL : CACHE_TTL;
+      if (now - entry.timestamp > ttl) {
         userCache.delete(key);
       }
     }
@@ -48,10 +50,13 @@ function cleanupCache() {
 function getCachedUser(walletAddress: string) {
   cleanupCache();
   const entry = userCache.get(walletAddress);
-  if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
-    return entry.data;
+  if (entry) {
+    const ttl = entry.data === null ? NO_ACCOUNT_CACHE_TTL : CACHE_TTL;
+    if (Date.now() - entry.timestamp < ttl) {
+      return entry.data;
+    }
   }
-  return null;
+  return undefined;
 }
 
 function setCachedUser(walletAddress: string, userData: CacheEntry['data']) {
@@ -68,78 +73,94 @@ export async function POST(request: NextRequest) {
 
     if (!walletAddress) {
       return NextResponse.json(
-        { error: 'Wallet address is required' },
+        { 
+          success: false,
+          error: 'Wallet address is required',
+          code: 'WALLET_REQUIRED'
+        },
         { status: 400 }
       );
     }
 
-    const normalizedAddress = getAddress(walletAddress);
+    try {
+      const normalizedAddress = getAddress(walletAddress);
+      
+      // Check cache first
+      const cachedUser = getCachedUser(normalizedAddress);
+      if (cachedUser !== undefined) {
+        console.log(`Cache hit for wallet: ${normalizedAddress}`);
+        return NextResponse.json({
+          success: true,
+          user: cachedUser,
+          cached: true,
+          hasAccount: cachedUser !== null
+        });
+      }
 
-    // Check cache first
-    const cachedUser = getCachedUser(normalizedAddress);
-    if (cachedUser) {
-      console.log(`Cache hit for wallet: ${normalizedAddress}`);
+      console.log(`Cache miss for wallet: ${normalizedAddress}, fetching from API`);
+
+      const result = await client.fetchBulkUsersByEthOrSolAddress({
+        addresses: [normalizedAddress]
+      });
+
+      const users = Object.values(result);
+
+      // Handle case where no Farcaster account exists
+      if (!users.length || !users[0].length) {
+        // Cache the "no account" result
+        setCachedUser(normalizedAddress, null);
+        
+        return NextResponse.json({
+          success: true,
+          user: null,
+          hasAccount: false,
+          cached: false
+        });
+      }
+
+      const user = users[0][0];
+      const userData = {
+        fid: user.fid,
+        username: user.username,
+        displayName: user.display_name || '',
+        pfpUrl: user.pfp_url || '',
+        followerCount: user.follower_count,
+        followingCount: user.following_count,
+        verifications: user.verifications || [],
+        custodyAddress: user.custody_address,
+      };
+
+      // Cache the user data
+      setCachedUser(normalizedAddress, userData);
+
       return NextResponse.json({
         success: true,
-        user: cachedUser,
-        cached: true
+        user: userData,
+        hasAccount: true,
+        cached: false
       });
+
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('invalid address')) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Invalid wallet address format',
+            code: 'INVALID_ADDRESS'
+          },
+          { status: 400 }
+        );
+      }
+      throw err; // Re-throw for general error handling
     }
-
-    console.log(`Cache miss for wallet: ${normalizedAddress}, fetching from API`);
-
-    const result = await client.fetchBulkUsersByEthOrSolAddress({
-      addresses: [normalizedAddress]
-    });
-
-    const users = Object.values(result);
-
-    if (users.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'No Farcaster user found for this wallet address',
-        debug: {
-          searchedAddress: normalizedAddress,
-        }
-      });
-    }
-
-    if (users[0].length == 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'No Farcaster user found for this wallet address',
-        debug: {
-          searchedAddress: normalizedAddress,
-        }
-      });
-    }
-
-    const user = users[0][0];
-    const userData = {
-      fid: user.fid,
-      username: user.username,
-      displayName: user.display_name || '',
-      pfpUrl: user.pfp_url || '',
-      followerCount: user.follower_count,
-      followingCount: user.following_count,
-      verifications: user.verifications || [],
-      custodyAddress: user.custody_address,
-    };
-
-    // Cache the user data
-    setCachedUser(normalizedAddress, userData);
-
-    return NextResponse.json({
-      success: true,
-      user: userData,
-      cached: false
-    });
 
   } catch (error) {
     console.error('Error fetching Farcaster user:', error);
     return NextResponse.json(
       { 
+        success: false,
         error: 'Failed to fetch Farcaster user',
+        code: 'API_ERROR',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

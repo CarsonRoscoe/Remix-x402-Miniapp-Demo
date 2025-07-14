@@ -117,46 +117,6 @@ export async function queueVideoGeneration({
   };
 }
 
-// Function to fetch Farcaster profile picture using our API route
-export async function getFarcasterProfile(walletAddress: string): Promise<{ farcasterId: number, pfpUrl: string } | undefined> {
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/farcaster/user`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ walletAddress }),
-    });
-    
-    if (!response.ok) {
-      console.error('Failed to fetch Farcaster profile:', response.statusText);
-      return;
-    }
-    
-    const data = await response.json();
-    console.log('Farcaster API response:', data);
-    
-    if (data.success && data.user?.pfpUrl) {
-      let url = data.user.pfpUrl;
-      if (url.includes("/rect")) {
-        const parts = url.split("/");
-        parts[parts.length - 1] = "original" //"squarecrop3";
-        url = parts.join("/");
-      }
-      return { farcasterId: data.user.fid, pfpUrl: url };
-    }
-    
-    if (!data.success) {
-      console.log('Farcaster lookup failed:', data.error, data.debug);
-    }
-    
-    return;
-  } catch (error) {
-    console.error('Error fetching Farcaster profile:', error);
-    return;
-  }
-}
-
 // Function to generate AI video using Kling 2.1 Master image-to-video
 export async function generateAIVideo(prompt: string, profileImageUrl: string): Promise<string> {
   // Remove special characters from prompt
@@ -203,5 +163,36 @@ export async function generateAIVideo(prompt: string, profileImageUrl: string): 
     console.error(JSON.stringify((error as { body?: unknown })?.body ?? {}, null, 2));
     // Fallback to placeholder video
     throw new Error('No video generated from image-to-video');
+  }
+}
+
+// Function to get Farcaster profile from MiniKit context
+export async function getFarcasterProfile(walletAddress: string): Promise<{ farcasterId: number, pfpUrl: string } | undefined> {
+  try {
+    // Get the user's Farcaster ID from the MiniKit API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_ONCHAINKIT_API_URL}/api/v1/user/${walletAddress}`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch Farcaster profile from MiniKit:', response.statusText);
+      return;
+    }
+
+    const data = await response.json();
+    if (!data.user) {
+      console.log('No Farcaster user found for wallet:', walletAddress);
+      return;
+    }
+
+    return {
+      farcasterId: data.user.fid,
+      pfpUrl: data.user.pfp_url || '',
+    };
+  } catch (error) {
+    console.error('Error fetching Farcaster profile from MiniKit:', error);
+    return;
   }
 }

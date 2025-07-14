@@ -5,6 +5,24 @@
 /* Custom CSS for Remix Mini App */
 
 /* Base styles for mini app embedding */
+:root {
+  --app-accent: #3b82f6; /* Base blue color */
+  --app-accent-hover: #2563eb; /* Darker blue for hover */
+  --app-accent-light: #60a5fa; /* Lighter blue for contrast */
+  --app-accent-bg: rgba(59, 130, 246, 0.1); /* Light blue background */
+  --app-text: #1e293b; /* Dark text */
+  --app-text-light: #64748b; /* Light text */
+}
+
+[data-theme="dark"] {
+  --app-accent: #60a5fa; /* Lighter blue for dark mode */
+  --app-accent-hover: #93c5fd; /* Even lighter for hover in dark mode */
+  --app-accent-light: #3b82f6; /* Base blue for contrast in dark mode */
+  --app-accent-bg: rgba(96, 165, 250, 0.1); /* Light blue background for dark mode */
+  --app-text: #f8fafc; /* Light text for dark mode */
+  --app-text-light: #94a3b8; /* Lighter text for dark mode */
+}
+
 html {
   scroll-behavior: smooth;
 }
