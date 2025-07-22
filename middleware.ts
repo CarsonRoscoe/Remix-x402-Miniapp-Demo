@@ -238,6 +238,6 @@ export const middleware = asyncPaymentMiddleware(
 
 // Configure which paths the middleware should run on
 export const config = {
-  matcher: ["/api/generate/daily", "/api/generate/custom", "/api/generate/custom-video"],
+  matcher: ["/api/generate/daily", "/api/generate/custom", "/api/generate/custom-video", "/api/who-am-i"],
   runtime: "nodejs",
 }; 
