@@ -1,4 +1,4 @@
-import { facilitator } from "@coinbase/x402";
+import { facilitator } from "./app/utils/facilitator";
 import { Address, getAddress } from "viem";
 import { exact } from "x402/schemes";
 import {
@@ -218,6 +218,20 @@ export const middleware = asyncPaymentMiddleware(
         description: "Custom remix video generation with any picture",
       },
     },
+    "/api/who-am-i": {
+      price: "$0.01",
+      network,
+      config: {
+        description: "Check if you're logged in",
+        outputSchema: {
+          input: {
+            queryParams: {
+              name: "string"
+            }
+          }
+        }
+      },
+    }
   },
   facilitator,
 );
