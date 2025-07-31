@@ -14,13 +14,12 @@ import {
   moneySchema,
   PaymentPayload,
   PaymentRequirements,
+  RequestStructure,
   Resource,
   RoutesConfig,
 } from "x402/types";
 import { useFacilitator } from "x402/verify";
-import { safeBase64Encode } from "x402/shared";
 import { NextRequest, NextResponse } from "next/server";
-import { createPendingVideo } from "./app/api/db";
 
 const payTo = process.env.NEXT_PUBLIC_RESOURCE_WALLET_ADDRESS as Address;
 const network = (process.env.NEXT_PUBLIC_NETWORK || "base-sepolia") as 'base' | 'base-sepolia';
@@ -51,12 +50,15 @@ export function asyncPaymentMiddleware(
     // Find matching route configuration
     const matchingRoute = findMatchingRoute(routePatterns, pathname, method);
 
+    console.info("Pathname: ", pathname);
+    console.info("Method: ", method);
+
     if (!matchingRoute) {
       return NextResponse.next();
     }
 
     const { price, network, config = {} } = matchingRoute.config;
-    const { description, mimeType, maxTimeoutSeconds, outputSchema, customPaywallHtml, resource } =
+    const { description, mimeType, maxTimeoutSeconds, inputSchema, outputSchema, customPaywallHtml, resource } =
       config;
 
     const atomicAmountForAsset = processPriceToAtomicAmount(price, network);
@@ -65,8 +67,29 @@ export function asyncPaymentMiddleware(
     }
     const { maxAmountRequired, asset } = atomicAmountForAsset;
 
+    const input = inputSchema
+    ? ({
+        type: "http",
+        method,
+        ...inputSchema,
+      } as RequestStructure)
+    : undefined;
+
+  const requestStructure =
+    input || outputSchema
+      ? {
+          input,
+          output: outputSchema,
+        }
+      : undefined;
+
     const resourceUrl =
       resource || (`${request.nextUrl.protocol}//${request.nextUrl.host}${pathname}` as Resource);
+
+    console.info("Request nextUrl protocol: ", request.nextUrl.protocol);
+    console.info("Request nextUrl host: ", request.nextUrl.host);
+    console.info("Request nextUrl pathname: ", request.nextUrl.pathname);
+    console.info("Resource URL: ", resourceUrl);
     const paymentRequirements: PaymentRequirements[] = [
       {
         scheme: "exact",
@@ -78,7 +101,7 @@ export function asyncPaymentMiddleware(
         payTo: getAddress(payTo),
         maxTimeoutSeconds: maxTimeoutSeconds ?? 300,
         asset: getAddress(asset.address),
-        outputSchema,
+        outputSchema: requestStructure,
         extra: asset.eip712,
       },
     ];
@@ -202,6 +225,14 @@ export const middleware = asyncPaymentMiddleware(
       network,
       config: {
         description: "Daily remix video generation with profile picture",
+        inputSchema: {
+          bodyType: "json",
+          bodyFields: {
+            walletAddress: "string",
+            pfpUrl: "string",
+            farcasterId: "number",
+          },
+        }
       },
     },
     "/api/generate/custom": {
@@ -209,6 +240,15 @@ export const middleware = asyncPaymentMiddleware(
       network,
       config: {
         description: "Custom remix video generation with profile picture",
+        inputSchema: {
+          bodyType: "json",
+          bodyFields: {
+            prompt: "string",
+            walletAddress: "string",
+            pfpUrl: "string",
+            farcasterId: "number",
+          },
+        }
       },
     },
     "/api/generate/custom-video": {
@@ -216,6 +256,14 @@ export const middleware = asyncPaymentMiddleware(
       network,
       config: {
         description: "Custom remix video generation with any picture",
+        inputSchema: {
+          bodyType: "json",
+          bodyFields: {
+            prompt: "string",
+            imageUrl: "string",
+            walletAddress: "string",
+          },
+        }
       },
     },
   },
