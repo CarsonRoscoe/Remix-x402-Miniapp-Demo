@@ -266,12 +266,28 @@ export const middleware = asyncPaymentMiddleware(
         }
       },
     },
+    "/test": {
+      price: "$0.01",
+      network,
+      config: {
+        description: "Test page",
+      }
+    }
   },
   facilitator,
 );
 
 // Configure which paths the middleware should run on
 export const config = {
-  matcher: ["/api/generate/daily", "/api/generate/custom", "/api/generate/custom-video"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (metadata files)
+     */
+    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/", // Include the root path explicitly
+  ],
   runtime: "nodejs",
 }; 
