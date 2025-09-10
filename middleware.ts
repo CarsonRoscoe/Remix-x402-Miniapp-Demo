@@ -222,7 +222,7 @@ export const middleware = asyncPaymentMiddleware(
   {
     "/api/generate/daily": {
       price: "$0.50",
-      network,
+      network: 'base-sepolia',
       config: {
         description: "Daily remix video generation with profile picture",
         inputSchema: {
@@ -237,7 +237,7 @@ export const middleware = asyncPaymentMiddleware(
     },
     "/api/generate/custom": {
       price: "$1.00",
-      network,
+      network: 'base-sepolia',
       config: {
         description: "Custom remix video generation with profile picture",
         inputSchema: {
@@ -253,7 +253,7 @@ export const middleware = asyncPaymentMiddleware(
     },
     "/api/generate/custom-video": {
       price: "$1.00",
-      network,
+      network: 'base-sepolia',
       config: {
         description: "Custom remix video generation with any picture",
         inputSchema: {
@@ -268,7 +268,7 @@ export const middleware = asyncPaymentMiddleware(
     },
     "/test": {
       price: "$0.01",
-      network,
+      network: 'base-sepolia',
       config: {
         description: "Test page",
       },
@@ -287,7 +287,7 @@ export const middleware = asyncPaymentMiddleware(
       },
     }
   },
-  facilitator,
+  // facilitator,
 );
 
 // Configure which paths the middleware should run on
