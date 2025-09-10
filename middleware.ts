@@ -274,17 +274,16 @@ export const middleware = asyncPaymentMiddleware(
       },
     },
     "/api/who-am-i": {
-      price: "$0.01",
-      network,
+      price: "$0.001",
+      network: 'base',
       config: {
+        resource: "https://remix-x402-miniapp-demo-h2qvcvka4-carsonroscoes-projects.vercel.app/api/who-am-i",
         description: "Check if you're logged in",
-        outputSchema: {
-          input: {
-            queryParams: {
-              name: "string"
-            }
+        inputSchema: {
+          queryParams: {
+            name: "string"
           }
-        }
+        },
       },
     }
   },

@@ -2,7 +2,7 @@ import { generateJwt } from "@coinbase/cdp-sdk/auth";
 import { FacilitatorConfig } from "x402/types";
 import { CreateHeaders } from "x402/verify";
 
-const COINBASE_FACILITATOR_BASE_URL = "https://cloud-api-dev.cbhq.net/platform";
+const COINBASE_FACILITATOR_BASE_URL = "https://cloud-api-dev.cbhq.net";
 const COINBASE_FACILITATOR_V2_ROUTE = "/platform/v2/x402";
 
 const X402_SDK_VERSION = "0.4.2";
@@ -13,6 +13,7 @@ const CDP_SDK_VERSION = "1.1.1";
  *
  * @param apiKeyId - The api key ID
  * @param apiKeySecret - The api key secret
+ * @param requestMethod - The method for the request (e.g. 'POST')
  * @param requestHost - The host for the request (e.g. 'https://x402.org/facilitator')
  * @param requestPath - The path for the request (e.g. '/verify')
  * @returns The authorization header string
@@ -20,13 +21,14 @@ const CDP_SDK_VERSION = "1.1.1";
 export async function createAuthHeader(
   apiKeyId: string,
   apiKeySecret: string,
+  requestMethod: string,
   requestHost: string,
   requestPath: string,
 ) {
   const jwt = await generateJwt({
     apiKeyId,
     apiKeySecret,
-    requestMethod: "POST",
+    requestMethod,
     requestHost,
     requestPath,
   });
@@ -75,6 +77,7 @@ export function createCdpAuthHeaders(apiKeyId?: string, apiKeySecret?: string): 
         Authorization: await createAuthHeader(
           apiKeyId,
           apiKeySecret,
+          "POST",
           requestHost,
           `${COINBASE_FACILITATOR_V2_ROUTE}/verify`,
         ),
@@ -84,9 +87,13 @@ export function createCdpAuthHeaders(apiKeyId?: string, apiKeySecret?: string): 
         Authorization: await createAuthHeader(
           apiKeyId,
           apiKeySecret,
+          "POST",
           requestHost,
           `${COINBASE_FACILITATOR_V2_ROUTE}/settle`,
         ),
+        "Correlation-Context": createCorrelationHeader(),
+      },
+      list: {
         "Correlation-Context": createCorrelationHeader(),
       },
     };
