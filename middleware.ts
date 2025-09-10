@@ -277,7 +277,7 @@ export const middleware = asyncPaymentMiddleware(
       price: "$0.001",
       network: 'base',
       config: {
-        resource: "https://remix-x402-miniapp-demo-h2qvcvka4-carsonroscoes-projects.vercel.app/api/who-am-i",
+        resource: "https://remix-x402-miniapp-demo-git-feat-7bd4d3-carsonroscoes-projects.vercel.app/api/who-am-i",
         description: "Check if you're logged in",
         inputSchema: {
           queryParams: {
