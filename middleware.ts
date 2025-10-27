@@ -266,13 +266,6 @@ export const middleware = asyncPaymentMiddleware(
         }
       },
     },
-    "/test": {
-      price: "$0.01",
-      network,
-      config: {
-        description: "Test page",
-      }
-    }
   },
   facilitator,
 );
