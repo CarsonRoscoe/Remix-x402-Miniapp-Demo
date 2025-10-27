@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
     description: process.env.NEXT_PUBLIC_APP_DESCRIPTION,
-    keywords: ['AI', 'video generation', 'Farcaster', 'x402', 'Base network', 'Coinbase Wallet', 'mini app'],
+    keywords: ['AI', 'video generation', 'Farcaster', 'x402', 'Base network', 'Coinbase Wallet', 'mini app', 'base app', 'remix', 'NFT', 'Zora', 'crypto', 'web3'],
     authors: [{ name: 'Remix Team' }],
     
     openGraph: {
@@ -61,17 +61,41 @@ export async function generateMetadata(): Promise<Metadata> {
       telephone: false,
     },
     
+    alternates: {
+      canonical: URL,
+    },
+    
+    category: 'entertainment',
+    
     robots: {
-      index: false,
-      follow: false,
+      index: true,
+      follow: true,
     },
     
     other: {
       'fc:frame': JSON.stringify({
-        version: "1",
+        version: "next",
         imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE,
         button: {
-          title: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME}`,
+          title: `🎬 Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME}`,
+          action: {
+            type: "launch_frame",
+            name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
+            url: URL,
+            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE,
+            splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR,
+          },
+        },
+      }),
+      'fc:miniapp': JSON.stringify({
+        version: "1",
+        name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
+        iconUrl: process.env.NEXT_PUBLIC_APP_ICON,
+        homeUrl: URL,
+        description: process.env.NEXT_PUBLIC_APP_DESCRIPTION,
+        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE,
+        button: {
+          title: `🎬 Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME}`,
           action: {
             type: "launch_frame",
             name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,

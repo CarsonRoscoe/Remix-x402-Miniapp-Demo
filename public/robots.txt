@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Farcaster Mini App
+Allow: /.well-known/farcaster.json
+Allow: /manifest.json
+
+# Static assets
+Allow: /icon-*.png
+Allow: /hero.png
+Allow: /splash.png
+Allow: /og-image.png
+Allow: /screenshot.png
+
+Sitemap: https://your-domain.com/sitemap.xml
+
+# Base App Discovery
+Allow: /.well-known/
+Allow: /api/
+Allow: /manifest.json

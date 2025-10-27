@@ -15,7 +15,7 @@ export async function GET() {
   const URL = process.env.NEXT_PUBLIC_URL;
 
   return Response.json({
-    version: "1",
+    version: "next",
     imageUrl: `${URL}/remix-logo.png`,
     button: {
       title: "🎬 Remix Me",
@@ -32,8 +32,15 @@ export async function GET() {
       payload: process.env.FARCASTER_PAYLOAD,
       signature: process.env.FARCASTER_SIGNATURE,
     },
-    frame: withValidProperties({
+    miniapp: withValidProperties({
       version: "1",
+      name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
+      iconUrl: process.env.NEXT_PUBLIC_APP_ICON,
+      homeUrl: URL,
+      description: process.env.NEXT_PUBLIC_APP_DESCRIPTION,
+    }),
+    frame: withValidProperties({
+      version: "next",
       name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
       subtitle: process.env.NEXT_PUBLIC_APP_SUBTITLE,
       description: process.env.NEXT_PUBLIC_APP_DESCRIPTION,
@@ -44,12 +51,15 @@ export async function GET() {
       homeUrl: URL,
       webhookUrl: `${URL}/api/webhook`,
       primaryCategory: process.env.NEXT_PUBLIC_APP_PRIMARY_CATEGORY,
-      tags: [],
+      tags: ["AI", "video", "generation", "base", "farcaster", "x402"],
       heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE,
       tagline: process.env.NEXT_PUBLIC_APP_TAGLINE,
       ogTitle: process.env.NEXT_PUBLIC_APP_OG_TITLE,
       ogDescription: process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION,
       ogImageUrl: process.env.NEXT_PUBLIC_APP_OG_IMAGE,
+      isBaseApp: "true",
+      discoverable: "true",
+      defaultLaunch: "true",
     }),
   });
 } 
