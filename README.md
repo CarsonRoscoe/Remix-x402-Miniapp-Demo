@@ -314,5 +314,5 @@ This project is licensed under the MIT License.
 
 For support and questions:
 - Check the [OnchainKit documentation](https://onchainkit.xyz)
-- Review [x402 documentation](https://docs.base.org/wallet-app/introduction/getting-started)
+- Review [x402 documentation](https://docs.base.org/mini-apps/quickstart/new-apps/install)
 - Open an issue in this repository
