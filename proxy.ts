@@ -79,7 +79,9 @@ export const resourceServer = new x402ResourceServer({
   verify: (...args) => getFacilitatorClient().verify(...args),
   settle: (...args) => getFacilitatorClient().settle(...args),
   getSupported: () => getFacilitatorClient().getSupported(),
-}).register(network, new ExactEvmScheme());
+})
+  .register("eip155:8453", new ExactEvmScheme())
+  .register("eip155:84532", new ExactEvmScheme());
 
 const httpServer = new x402HTTPResourceServer(resourceServer, {
   "POST /api/generate/daily": {
