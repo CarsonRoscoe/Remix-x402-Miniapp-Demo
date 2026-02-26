@@ -99,10 +99,10 @@ const httpServer = new x402HTTPResourceServer(resourceServer, {
   "POST /api/generate/video": {
     accepts: [{ scheme: "exact", price: {
       amount: "100000",
-      asset: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+      asset: "0xeED520980fC7C7B4eB379B96d61CEdea2423005a",
       extra: {
         "transferMethod": "permit2",
-        "name": "USDT",
+        "name": "Mock Generic ERC20",
         "version": "2"
       }
     }, network: "eip155:84532", payTo }],
