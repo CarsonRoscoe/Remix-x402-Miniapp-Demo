@@ -145,7 +145,7 @@ let initPromise: Promise<void> | null = httpServer.initialize().catch((err) => {
  * Settlement is deferred until video generation completes.
  * Payment details are forwarded to route handlers via headers.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const adapter = new NextAdapter(request);
   const context = {
     adapter,
@@ -202,5 +202,4 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico).*)",
     "/",
   ],
-  runtime: "nodejs",
 };

@@ -1,4 +1,4 @@
-import { resourceServer } from "@/middleware";
+import { resourceServer } from "@/proxy";
 import type { PaymentPayload, PaymentRequirements } from "@x402/core/types";
 import { markPaymentAsSettled } from "./db";
 
