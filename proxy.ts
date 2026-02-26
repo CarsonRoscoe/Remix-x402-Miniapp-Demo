@@ -146,54 +146,62 @@ let initPromise: Promise<void> | null = httpServer.initialize().catch((err) => {
  * Payment details are forwarded to route handlers via headers.
  */
 export async function proxy(request: NextRequest) {
-  const adapter = new NextAdapter(request);
-  const context = {
-    adapter,
-    path: request.nextUrl.pathname,
-    method: request.method,
-    paymentHeader:
-      adapter.getHeader("payment-signature") || adapter.getHeader("x-payment"),
-  };
+  try {
+    const adapter = new NextAdapter(request);
+    const context = {
+      adapter,
+      path: request.nextUrl.pathname,
+      method: request.method,
+      paymentHeader:
+        adapter.getHeader("payment-signature") || adapter.getHeader("x-payment"),
+    };
 
-  if (!httpServer.requiresPayment(context)) {
-    return NextResponse.next();
-  }
-
-  if (initPromise) {
-    await initPromise;
-    initPromise = null;
-  }
-
-  const result = await httpServer.processHTTPRequest(context);
-
-  switch (result.type) {
-    case "no-payment-required":
+    if (!httpServer.requiresPayment(context)) {
       return NextResponse.next();
-
-    case "payment-error": {
-      const { response } = result;
-      const headers = new Headers(response.headers);
-      headers.set(
-        "Content-Type",
-        response.isHtml ? "text/html" : "application/json",
-      );
-      return new NextResponse(
-        response.isHtml
-          ? (response.body as string)
-          : JSON.stringify(response.body || {}),
-        { status: response.status, headers },
-      );
     }
 
-    case "payment-verified": {
-      const paymentDetails = {
-        paymentPayload: result.paymentPayload,
-        paymentRequirements: result.paymentRequirements,
-      };
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set("x-payment-details", JSON.stringify(paymentDetails));
-      return NextResponse.next({ request: { headers: requestHeaders } });
+    if (initPromise) {
+      await initPromise;
+      initPromise = null;
     }
+
+    const result = await httpServer.processHTTPRequest(context);
+
+    switch (result.type) {
+      case "no-payment-required":
+        return NextResponse.next();
+
+      case "payment-error": {
+        const { response } = result;
+        const headers = new Headers(response.headers);
+        headers.set(
+          "Content-Type",
+          response.isHtml ? "text/html" : "application/json",
+        );
+        return new NextResponse(
+          response.isHtml
+            ? (response.body as string)
+            : JSON.stringify(response.body || {}),
+          { status: response.status, headers },
+        );
+      }
+
+      case "payment-verified": {
+        const paymentDetails = {
+          paymentPayload: result.paymentPayload,
+          paymentRequirements: result.paymentRequirements,
+        };
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set("x-payment-details", JSON.stringify(paymentDetails));
+        return NextResponse.next({ request: { headers: requestHeaders } });
+      }
+    }
+  } catch (error) {
+    console.error("x402 proxy error:", error);
+    return new NextResponse(
+      JSON.stringify({ error: "Payment processing error" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
   }
 }
 

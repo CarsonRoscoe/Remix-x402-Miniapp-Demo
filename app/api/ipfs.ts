@@ -25,11 +25,10 @@ export async function pinFileToIPFS(
 
   try {
     const presignRes = await fetchWithPayment(
-      "https://402.pinata.cloud/v1/pin/public",
+      `https://402.pinata.cloud/v1/pin/public?fileSize=${fileBuffer.length}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileSize: fileBuffer.length }),
       },
     );
 

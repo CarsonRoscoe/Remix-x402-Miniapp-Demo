@@ -15,14 +15,13 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await getOrUpdateUser({ walletAddress });
+    const paymentDetails = getPaymentDetails(request);
 
     const { queueResult } = await queueVideoGeneration({
       prompt,
       imageUrl,
       type: "custom-video",
     });
-
-    const paymentDetails = getPaymentDetails(request);
 
     const pendingVideo = await createPendingVideo({
       userId: user.id,
