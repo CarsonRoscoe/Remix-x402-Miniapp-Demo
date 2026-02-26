@@ -27,44 +27,58 @@ const network: Network =
   process.env.NEXT_PUBLIC_NETWORK === "base" ? "eip155:8453" : "eip155:84532";
 const chain = process.env.NEXT_PUBLIC_NETWORK === "base" ? base : baseSepolia;
 
-const facilitatorAccount = privateKeyToAccount(
-  process.env.FACILITATOR_PRIVATE_KEY as `0x${string}`,
-);
-const viemClient = createWalletClient({
-  account: facilitatorAccount,
-  chain,
-  transport: http(),
-}).extend(publicActions);
+function createFacilitatorClient(): FacilitatorClient {
+  const pk = process.env.FACILITATOR_PRIVATE_KEY;
+  if (!pk) {
+    throw new Error("FACILITATOR_PRIVATE_KEY env var is required");
+  }
 
-const evmSigner = toFacilitatorEvmSigner({
-  address: facilitatorAccount.address,
-  readContract: (args) => viemClient.readContract({ ...args, args: args.args || [] }),
-  verifyTypedData: (args) => viemClient.verifyTypedData(args as any),
-  writeContract: (args) => viemClient.writeContract({ ...args, args: args.args || [] }),
-  sendTransaction: (args) => viemClient.sendTransaction(args),
-  waitForTransactionReceipt: (args) => viemClient.waitForTransactionReceipt(args),
-  getCode: (args) => viemClient.getCode(args),
-});
+  const account = privateKeyToAccount(pk as `0x${string}`);
+  const client = createWalletClient({
+    account,
+    chain,
+    transport: http(),
+  }).extend(publicActions);
 
-const localFacilitator = new x402Facilitator()
-  .register(network, new ExactEvmSchemeFacilitator(evmSigner))
-  .registerExtension(EIP2612_GAS_SPONSORING)
-  .registerExtension(
-    createErc20ApprovalGasSponsoringExtension(evmSigner, viemClient),
-  );
+  const signer = toFacilitatorEvmSigner({
+    address: account.address,
+    readContract: (args) => client.readContract({ ...args, args: args.args || [] }),
+    verifyTypedData: (args) => client.verifyTypedData(args as any),
+    writeContract: (args) => client.writeContract({ ...args, args: args.args || [] }),
+    sendTransaction: (args) => client.sendTransaction(args),
+    waitForTransactionReceipt: (args) => client.waitForTransactionReceipt(args),
+    getCode: (args) => client.getCode(args),
+  });
 
-const facilitatorClient: FacilitatorClient = {
-  verify: async (pp: PaymentPayload, pr: PaymentRequirements) =>
-    localFacilitator.verify(pp, pr),
-  settle: async (pp: PaymentPayload, pr: PaymentRequirements) =>
-    localFacilitator.settle(pp, pr),
-  getSupported: async () => localFacilitator.getSupported() as any,
-};
+  const facilitator = new x402Facilitator()
+    .register(network, new ExactEvmSchemeFacilitator(signer))
+    .registerExtension(EIP2612_GAS_SPONSORING)
+    .registerExtension(
+      createErc20ApprovalGasSponsoringExtension(signer, client),
+    );
 
-export const resourceServer = new x402ResourceServer(facilitatorClient).register(
-  network,
-  new ExactEvmScheme(),
-);
+  return {
+    verify: async (pp: PaymentPayload, pr: PaymentRequirements) =>
+      facilitator.verify(pp, pr),
+    settle: async (pp: PaymentPayload, pr: PaymentRequirements) =>
+      facilitator.settle(pp, pr),
+    getSupported: async () => facilitator.getSupported() as any,
+  };
+}
+
+let _facilitatorClient: FacilitatorClient | null = null;
+function getFacilitatorClient(): FacilitatorClient {
+  if (!_facilitatorClient) {
+    _facilitatorClient = createFacilitatorClient();
+  }
+  return _facilitatorClient;
+}
+
+export const resourceServer = new x402ResourceServer({
+  verify: (...args) => getFacilitatorClient().verify(...args),
+  settle: (...args) => getFacilitatorClient().settle(...args),
+  getSupported: () => getFacilitatorClient().getSupported(),
+}).register(network, new ExactEvmScheme());
 
 const httpServer = new x402HTTPResourceServer(resourceServer, {
   "POST /api/generate/daily": {
