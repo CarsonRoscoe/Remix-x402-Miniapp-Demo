@@ -80,7 +80,13 @@ const httpServer = new x402HTTPResourceServer(resourceServer, {
     description: "Custom remix video generation with any picture",
   },
   "POST /api/generate/video": {
-    accepts: [{ scheme: "exact", price: "$0.01", network, payTo }],
+    accepts: [{ scheme: "exact", price: "$1.00", network, payTo }, { scheme: "exact", price: {
+      amount: "100000",
+      asset: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+      extra: {
+        "transferMethod": "permit2"
+      }
+    }, network, payTo }],
     description: "Generate an AI video from a prompt and image. Returns a public URL to view the video once ready.",
     mimeType: "application/json",
     extensions: {
