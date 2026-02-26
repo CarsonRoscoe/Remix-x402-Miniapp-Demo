@@ -51,10 +51,11 @@ function createFacilitatorClient(): FacilitatorClient {
   });
 
   const facilitator = new x402Facilitator()
-    .register(network, new ExactEvmSchemeFacilitator(signer))
+    .register("eip155:8453", new ExactEvmSchemeFacilitator(signer))
+    .register("eip155:84532", new ExactEvmSchemeFacilitator(signer))
     .registerExtension(EIP2612_GAS_SPONSORING)
     .registerExtension(
-      createErc20ApprovalGasSponsoringExtension(signer, client),
+      createErc20ApprovalGasSponsoringExtension(signer, client.extend(publicActions)),
     );
 
   return {
@@ -102,7 +103,7 @@ const httpServer = new x402HTTPResourceServer(resourceServer, {
         "name": "USDT",
         "version": "2"
       }
-    }, network, payTo }],
+    }, network: "eip155:84532", payTo }],
     description: "Generate an AI video from a prompt and image. Returns a public URL to view the video once ready.",
     mimeType: "application/json",
     extensions: {
