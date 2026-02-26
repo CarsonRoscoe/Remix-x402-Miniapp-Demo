@@ -3,7 +3,7 @@ import { getPendingVideos, updatePendingVideoStatus, deletePendingVideo, createC
 import { downloadFile, pinFileToIPFS } from '../ipfs';
 import { PendingVideo } from '@/app/generated/prisma';
 import { settleVideoPayment, markPendingVideoPaymentAsSettled } from '../payment-settlement';
-import { PaymentPayload, PaymentRequirements } from 'x402/types';
+import type { PaymentPayload, PaymentRequirements } from '@x402/core/types';
 import { sendFrameNotification } from "@/lib/notification-client";
 
 // Initialize fal
@@ -139,6 +139,7 @@ async function handleCompletedVideo(pendingVideo: PendingVideo): Promise<{ succe
           promptId: dailyPrompt.id,
           videoIpfs,
           videoUrl: result.video.url,
+          pendingVideoId: pendingVideo.id,
         }));
         break;
         
@@ -147,6 +148,7 @@ async function handleCompletedVideo(pendingVideo: PendingVideo): Promise<{ succe
           userId: pendingVideo.userId,
           videoIpfs,
           videoUrl: result.video.url,
+          pendingVideoId: pendingVideo.id,
         }));
         break;
         
@@ -155,6 +157,7 @@ async function handleCompletedVideo(pendingVideo: PendingVideo): Promise<{ succe
           userId: pendingVideo.userId,
           videoIpfs,
           videoUrl: result.video.url,
+          pendingVideoId: pendingVideo.id,
         });
         break;
         
@@ -168,8 +171,8 @@ async function handleCompletedVideo(pendingVideo: PendingVideo): Promise<{ succe
     if (pendingVideo.paymentPayload && pendingVideo.paymentRequirements && !pendingVideo.paymentSettled) {
       try {
         const settlementResult = await settleVideoPayment(
-          pendingVideo.paymentPayload as PaymentPayload,
-          pendingVideo.paymentRequirements as PaymentRequirements
+          pendingVideo.paymentPayload as unknown as PaymentPayload,
+          pendingVideo.paymentRequirements as unknown as PaymentRequirements
         );
         
         if (settlementResult.success) {

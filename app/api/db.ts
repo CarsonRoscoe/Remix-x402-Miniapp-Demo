@@ -50,21 +50,23 @@ export async function createDailyRemix({
   promptId,
   videoIpfs,
   videoUrl,
+  pendingVideoId,
 }: {
   userId: string;
   promptId: string;
   videoIpfs: string;
   videoUrl?: string;
+  pendingVideoId?: string;
 }) {
   await ensureConnected();
   
-  // 1. Create video
   const video = await prisma.video.create({
     data: {
       userId,
       videoIpfs,
       videoUrl,
       type: 'daily',
+      pendingVideoId,
     },
   });
   // 2. Create remix
@@ -83,20 +85,22 @@ export async function createCustomRemix({
   userId,
   videoIpfs,
   videoUrl,
+  pendingVideoId,
 }: {
   userId: string;
   videoIpfs: string;
   videoUrl?: string;
+  pendingVideoId?: string;
 }) {
   await ensureConnected();
   
-  // 1. Create video
   const video = await prisma.video.create({
     data: {
       userId,
       videoIpfs,
       videoUrl,
       type: 'custom_remix',
+      pendingVideoId,
     },
   });
   // 2. Create remix (no promptId)
@@ -114,10 +118,12 @@ export async function createCustomVideo({
   userId,
   videoIpfs,
   videoUrl,
+  pendingVideoId,
 }: {
   userId: string;
   videoIpfs: string;
   videoUrl?: string;
+  pendingVideoId?: string;
 }) {
   await ensureConnected();
   
@@ -127,6 +133,7 @@ export async function createCustomVideo({
       videoIpfs,
       videoUrl,
       type: 'custom_video',
+      pendingVideoId,
     },
   });
   return video;
@@ -485,4 +492,14 @@ export async function markPaymentAsSettled(id: string) {
       paymentSettledAt: new Date(),
     },
   });
+}
+
+export async function getPendingVideoById(id: string) {
+  await ensureConnected();
+  return prisma.pendingVideo.findUnique({ where: { id } });
+}
+
+export async function getVideoByPendingId(pendingVideoId: string) {
+  await ensureConnected();
+  return prisma.video.findUnique({ where: { pendingVideoId } });
 }

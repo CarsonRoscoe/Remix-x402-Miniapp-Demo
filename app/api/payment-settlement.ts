@@ -1,20 +1,21 @@
-import { facilitator } from "@coinbase/x402";
-import { useFacilitator as getFacilitatorSettle } from "x402/verify";
-import { PaymentPayload, PaymentRequirements } from "x402/types";
+import { resourceServer } from "@/middleware";
+import type { PaymentPayload, PaymentRequirements } from "@x402/core/types";
 import { markPaymentAsSettled } from "./db";
 
 /**
- * Settles a payment for a completed video generation
- * This should be called when a video is successfully processed and approved
+ * Settles a payment for a completed video generation.
+ * Called when a video is successfully processed and approved.
  */
 export async function settleVideoPayment(
   paymentPayload: PaymentPayload,
-  paymentRequirements: PaymentRequirements
+  paymentRequirements: PaymentRequirements,
 ) {
   try {
-    const { settle } = getFacilitatorSettle(facilitator);
-    const settlement = await settle(paymentPayload, paymentRequirements);
-    
+    const settlement = await resourceServer.settlePayment(
+      paymentPayload,
+      paymentRequirements,
+    );
+
     if (settlement.success) {
       return {
         success: true,
@@ -25,13 +26,13 @@ export async function settleVideoPayment(
     } else {
       return {
         success: false,
-        error: 'Settlement failed',
+        error: settlement.errorReason ?? "Settlement failed",
       };
     }
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -43,7 +44,7 @@ export async function markPendingVideoPaymentAsSettled(pendingVideoId: string) {
   try {
     await markPaymentAsSettled(pendingVideoId);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
-} 
+}

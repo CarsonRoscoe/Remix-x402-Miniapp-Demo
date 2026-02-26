@@ -36,10 +36,11 @@
     "react-hot-toast": "^2.5.2",
     "viem": "^2.31.7",
     "wagmi": "^2.11.0",
-    "x402": "^0.6.6",
-    "x402-axios": "^0.6.6",
-    "x402-fetch": "^0.6.6",
-    "x402-next": "^0.6.5"
+    "@x402/core": "latest",
+    "@x402/next": "latest",
+    "@x402/evm": "latest",
+    "@x402/fetch": "latest",
+    "@x402/extensions": "latest"
   },
   "devDependencies": {
     "@types/node": "^20",

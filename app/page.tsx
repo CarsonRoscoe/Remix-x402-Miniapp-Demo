@@ -5,7 +5,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { getWalletClient } from 'wagmi/actions';
 import { config } from './viem-config';
-import { wrapFetchWithPayment } from 'x402-fetch';
+import { wrapFetchWithPayment, x402Client } from '@x402/fetch';
+import { ExactEvmScheme } from '@x402/evm/exact/client';
 import { 
   Wallet,
   ConnectWallet,
@@ -344,8 +345,10 @@ export default function App() {
         return;
       }
 
-      // For x402-fetch, we need to pass the wallet client as the account
-      const wrappedFetch = wrapFetchWithPayment(fetch, walletClient as unknown as Parameters<typeof wrapFetchWithPayment>[1], BigInt(2000000));
+      const network = process.env.NEXT_PUBLIC_NETWORK === 'base' ? 'eip155:8453' : 'eip155:84532';
+      const paymentClient = new x402Client()
+        .register(network, new ExactEvmScheme(walletClient as any));
+      const wrappedFetch = wrapFetchWithPayment(fetch, paymentClient);
 
       // Call the appropriate API endpoint with wallet address
       let endpoint: string;

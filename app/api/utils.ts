@@ -1,5 +1,5 @@
 import { fal } from "@fal-ai/client";
-import { PaymentPayload, PaymentRequirements, VerifyResponse } from "x402/types";
+import type { PaymentPayload, PaymentRequirements, VerifyResponse } from "@x402/core/types";
 
 // Type for payment details passed from middleware
 export interface PaymentDetails {
