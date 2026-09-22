@@ -1,0 +1,11 @@
+{
+  "name": "x402 AI Video Mini App",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "next-dev",
+      "command": "pnpm dev"
+    }
+  ]
+}
